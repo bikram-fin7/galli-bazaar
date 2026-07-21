@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galli Bazaar — NEPSE Trading Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#13201c;
+    --ink-soft:#1b2b25;
+    --ink-soft2:#22362e;
+    --line: rgba(237,230,214,0.10);
+    --marigold:#f2a93b;
+    --marigold-dim: rgba(242,169,59,0.16);
+    --rhodo:#c9483a;
+    --rhodo-dim: rgba(201,72,58,0.16);
+    --leaf:#4f9d69;
+    --leaf-dim: rgba(79,157,105,0.16);
+    --blue:#3e7c8c;
+    --blue-dim: rgba(62,124,140,0.18);
+    --parchment:#ede6d6;
+    --mist:#8fa39a;
+    --radius: 14px;
+    --maxw: 1180px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--parchment);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  body{min-height:100vh;}
+  h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  button{font-family:'Inter',sans-serif;cursor:pointer;}
+  ::selection{background:var(--marigold-dim);}
+
+  /* ---------- layout shells ---------- */
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px;}
+  .hidden{display:none !important;}
+
+  /* ---------- onboarding ---------- */
+  #onboardingOverlay{
+    position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%, #1c2e27 0%, #0e1714 70%);
+    display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;
+  }
+  .onboard-card{
+    max-width:460px;width:100%;background:var(--ink-soft);border:1px solid var(--line);
+    border-radius:20px;padding:34px 30px;box-shadow:0 30px 80px rgba(0,0,0,0.5);
+  }
+  .onboard-card .ridge-deco{height:54px;margin-bottom:18px;}
+  .onboard-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;color:var(--marigold);margin-bottom:8px;}
+  .onboard-card h1{font-size:26px;color:var(--parchment);}
+  .onboard-card p.tag{color:var(--mist);font-size:14.5px;margin:8px 0 22px;line-height:1.5;}
+  .onboard-card label{font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--mist);display:block;margin-bottom:7px;}
+  .onboard-card input[type=text]{
+    width:100%;background:var(--ink);border:1px solid var(--line);color:var(--parchment);
+    padding:13px 14px;border-radius:10px;font-size:15px;font-family:'Inter',sans-serif;margin-bottom:18px;
+  }
+  .onboard-card input[type=text]:focus{outline:none;border-color:var(--marigold);}
+  .btn-primary{
+    width:100%;background:var(--marigold);color:#1d1305;border:none;border-radius:10px;
+    padding:14px;font-weight:700;font-size:15px;transition:transform .12s ease, filter .12s ease;
+  }
+  .btn-primary:hover{filter:brightness(1.07);transform:translateY(-1px);}
+  .onboard-grant{
+    display:flex;align-items:center;justify-content:space-between;background:var(--ink);border:1px solid var(--line);
+    border-radius:10px;padding:13px 16px;margin-bottom:20px;
+  }
+  .onboard-grant .og-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mist);}
+  .onboard-grant .og-val{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--marigold);}
+  .onboard-foot{font-size:11.5px;color:var(--mist);margin-top:16px;line-height:1.5;}
+
+  /* ---------- topbar ---------- */
+  header.topbar{border-bottom:1px solid var(--line);background:rgba(19,32,28,0.92);backdrop-filter:blur(6px);position:sticky;top:0;z-index:50;}
+  .topbar-row{display:flex;align-items:center;gap:18px;padding:14px 0;}
+  .brand{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .brand h1{font-size:19px;color:var(--parchment);}
+  .brand .mark{width:30px;height:30px;}
+  .data-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mist);font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
+  .data-status .dot{width:7px;height:7px;border-radius:50%;background:var(--mist);}
+  .data-status.live .dot{background:var(--leaf);box-shadow:0 0 6px var(--leaf);}
+  .data-status.sim .dot{background:var(--marigold);}
+
+  .user-chips{display:flex;gap:10px;margin-left:auto;flex-shrink:0;}
+  .chip{background:var(--ink-soft2);border:1px solid var(--line);border-radius:10px;padding:7px 13px;text-align:right;}
+  .chip .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mist);}
+  .chip .val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;}
+  .chip.cash .val{color:var(--marigold);}
+  .chip.net .val{color:var(--parchment);}
+
+  /* ticker tape */
+  .ticker-tape{overflow:hidden;border-bottom:1px solid var(--line);background:var(--ink-soft);white-space:nowrap;}
+  .ticker-track{display:inline-flex;padding:8px 0;animation:scrollTape 100s linear infinite;}
+  @keyframes scrollTape{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  .tick-item{display:inline-flex;align-items:baseline;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:0 18px;border-right:1px solid var(--line);color:var(--mist);}
+  .tick-item b{color:var(--parchment);}
+  .tick-item .up{color:var(--leaf);}
+  .tick-item .down{color:var(--rhodo);}
+
+  /* nav */
+  nav.tabs{display:flex;gap:4px;padding:10px 0;overflow-x:auto;}
+  nav.tabs button{
+    background:transparent;border:1px solid transparent;color:var(--mist);padding:9px 16px;
+    border-radius:9px;font-size:13.5px;font-weight:600;white-space:nowrap;transition:all .15s ease;
+  }
+  nav.tabs button:hover{color:var(--parchment);}
+  nav.tabs button.active{background:var(--ink-soft2);color:var(--marigold);border-color:var(--line);}
+
+  main{padding:26px 0 80px;}
+  .section{display:none;}
+  .section.active{display:block;animation:fadeUp .25s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  /* hero */
+  .hero{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between;margin-bottom:22px;}
+  .hero h2{font-size:28px;line-height:1.2;max-width:560px;}
+  .hero p{color:var(--mist);font-size:14px;margin-top:8px;max-width:480px;}
+  .stat-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .stat-card{background:var(--ink-soft);border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-width:118px;}
+  .stat-card .lbl{font-size:10.5px;color:var(--mist);text-transform:uppercase;letter-spacing:.06em;}
+  .stat-card .val{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;margin-top:4px;}
+
+  /* ---------- NEPSE index card ---------- */
+  .index-card{padding:20px 22px 16px;}
+  .index-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;}
+  .index-name-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .index-name-row h3{font-size:14.5px;color:var(--mist);text-transform:uppercase;letter-spacing:.06em;font-weight:600;}
+  .index-methodology-tag{font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:none;letter-spacing:0;background:var(--ink-soft2);border:1px solid var(--line);color:var(--mist);padding:2px 7px;border-radius:5px;cursor:help;}
+  .market-session{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--mist);}
+  .market-session .dot{width:6px;height:6px;border-radius:50%;background:var(--mist);}
+  .market-session.open .dot{background:var(--leaf);box-shadow:0 0 6px var(--leaf);}
+  .market-session.open{color:var(--leaf);}
+  .index-value-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .index-value{font-family:'IBM Plex Mono',monospace;font-size:36px;font-weight:700;color:var(--parchment);letter-spacing:-0.01em;}
+  .index-abs{font-family:'IBM Plex Mono',monospace;font-size:14px;}
+  .index-substats{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;}
+  .index-substats div{font-size:12px;color:var(--mist);display:flex;flex-direction:column;gap:3px;}
+  .index-substats b{font-family:'IBM Plex Mono',monospace;color:var(--parchment);font-size:13px;font-weight:600;}
+  .index-range-seg{width:170px;margin:0;flex-shrink:0;}
+  .index-range-seg button{padding:7px;font-size:12px;}
+  .index-chart{margin-top:16px;}
+  .index-foot{font-size:11px;color:var(--mist);margin-top:10px;line-height:1.5;}
+  .tick-item.tick-index{border-left:2px solid var(--marigold);}
+  .tick-item.tick-index b{color:var(--marigold);}
+  .movers-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+  .movers-col{padding:14px 18px;}
+  .movers-col + .movers-col{border-left:1px solid var(--line);}
+  .movers-col h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mist);margin-bottom:10px;}
+  .movers-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;}
+  .movers-row .sym{font-size:13px;}
+  @media (max-width:640px){ .movers-grid{grid-template-columns:1fr;} .movers-col + .movers-col{border-left:none;border-top:1px solid var(--line);} }
+  @media (max-width:640px){ .index-value{font-size:28px;} .index-substats{gap:14px;} }
+
+  /* card / table */
+  .card{background:var(--ink-soft);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .card + .card{margin-top:18px;}
+  .card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap;}
+  .card-head h3{font-size:15px;}
+  .search-box{background:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--parchment);width:200px;}
+  .search-box:focus{outline:none;border-color:var(--marigold);}
+
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mist);padding:10px 18px;font-weight:600;}
+  td{padding:12px 18px;font-size:13.5px;border-top:1px solid var(--line);}
+  tr.row-hover{cursor:pointer;transition:background .12s ease;}
+  tr.row-hover:hover{background:var(--ink-soft2);}
+  .sym{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--parchment);}
+  .sec-tag{font-size:10.5px;color:var(--mist);}
+  .px{font-family:'IBM Plex Mono',monospace;}
+  .pct.up, .num.up{color:var(--leaf);}
+  .pct.down, .num.down{color:var(--rhodo);}
+  .pct{font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:3px 8px;border-radius:6px;display:inline-block;}
+  .pct.up{background:var(--leaf-dim);}
+  .pct.down{background:var(--rhodo-dim);}
+  .empty-state{padding:34px 18px;text-align:center;color:var(--mist);font-size:13.5px;}
+  .local-mode-note{background:var(--marigold-dim);border-bottom:1px solid var(--line);color:var(--parchment);font-size:12px;line-height:1.5;padding:11px 18px;}
+  .local-mode-note.connected{background:var(--leaf-dim);}
+
+  /* ridge chart */
+  .ridge-wrap{position:relative;width:100%;}
+  .ridge-wrap svg{width:100%;display:block;}
+
+  /* buttons */
+  .btn{border:1px solid var(--line);background:var(--ink-soft2);color:var(--parchment);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;}
+  .btn:hover{border-color:var(--marigold);}
+  .btn.buy{background:var(--leaf);border-color:var(--leaf);color:#0d1b12;}
+  .btn.sell{background:var(--rhodo);border-color:var(--rhodo);color:#26100c;}
+  .btn.ghost{background:transparent;}
+  .btn.small{padding:5px 10px;font-size:11.5px;}
+  .btn.full{width:100%;padding:13px;font-size:14.5px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(8,13,11,0.72);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:120;padding:16px;}
+  .modal{background:var(--ink-soft);border:1px solid var(--line);border-radius:18px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.5);}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 22px 10px;}
+  .modal-close{background:none;border:none;color:var(--mist);font-size:20px;line-height:1;padding:4px 8px;border-radius:6px;}
+  .modal-close:hover{color:var(--parchment);background:var(--ink-soft2);}
+  .modal-body{padding:6px 22px 22px;}
+  .seg{display:flex;background:var(--ink);border:1px solid var(--line);border-radius:9px;padding:3px;margin:14px 0;}
+  .seg button{flex:1;background:transparent;border:none;color:var(--mist);padding:8px;border-radius:7px;font-size:13px;font-weight:600;}
+  .seg button.active{background:var(--ink-soft2);color:var(--parchment);}
+  .field-row{display:flex;gap:10px;align-items:center;margin:10px 0;}
+  .field-row input[type=number]{flex:1;background:var(--ink);border:1px solid var(--line);color:var(--parchment);padding:11px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:15px;}
+  .qty-btn{width:38px;height:38px;border-radius:8px;border:1px solid var(--line);background:var(--ink-soft2);color:var(--parchment);font-size:17px;}
+  .trade-summary{background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--mist);margin:14px 0;line-height:1.9;}
+  .trade-summary b{color:var(--parchment);font-family:'IBM Plex Mono',monospace;float:right;}
+  .trade-summary div{display:flex;justify-content:space-between;}
+
+  /* discussion */
+  .post{padding:13px 0;border-top:1px solid var(--line);}
+  .post:first-child{border-top:none;}
+  .post .meta{display:flex;gap:8px;align-items:center;font-size:11.5px;color:var(--mist);margin-bottom:4px;}
+  .post .meta .who{color:var(--marigold);font-weight:600;}
+  .post .meta .tag{background:var(--blue-dim);color:#9ccbd8;padding:1px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;}
+  .post .body{font-size:13.5px;line-height:1.5;color:var(--parchment);}
+  .post-form{display:flex;gap:8px;margin-top:14px;}
+  .post-form input{flex:1;background:var(--ink);border:1px solid var(--line);color:var(--parchment);padding:10px 13px;border-radius:9px;font-size:13.5px;}
+  .post-form input:focus{outline:none;border-color:var(--marigold);}
+
+  /* leaderboard */
+  .lb-row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--line);}
+  .lb-row:first-child{border-top:none;}
+  .lb-rank{width:26px;font-family:'IBM Plex Mono',monospace;color:var(--mist);font-size:13px;text-align:center;}
+  .lb-rank.top1{color:var(--marigold);font-weight:700;}
+  .lb-rank.top2{color:#c9c0a8;font-weight:700;}
+  .lb-rank.top3{color:#cf9a6a;font-weight:700;}
+  .lb-name{flex:1;font-size:13.5px;font-weight:600;}
+  .lb-name .you{font-size:10.5px;color:var(--leaf);margin-left:6px;}
+  .lb-val{font-family:'IBM Plex Mono',monospace;font-size:13.5px;}
+  .lb-row.me{background:var(--marigold-dim);border-radius:8px;}
+
+  /* learn / quiz */
+  .quiz-card{padding:20px 22px;}
+  .quiz-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mist);margin-bottom:14px;}
+  .quiz-q{font-size:16px;font-weight:600;line-height:1.4;margin-bottom:16px;}
+  .opt{display:block;width:100%;text-align:left;background:var(--ink);border:1px solid var(--line);color:var(--parchment);padding:12px 14px;border-radius:10px;margin-bottom:9px;font-size:13.5px;transition:all .12s ease;}
+  .opt:hover{border-color:var(--marigold);}
+  .opt.correct{background:var(--leaf-dim);border-color:var(--leaf);}
+  .opt.wrong{background:var(--rhodo-dim);border-color:var(--rhodo);}
+  .opt:disabled{cursor:default;}
+  .explain{background:var(--ink);border-left:3px solid var(--marigold);border-radius:0 8px 8px 0;padding:12px 14px;font-size:13px;color:var(--mist);margin-top:12px;line-height:1.55;}
+  .badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .badge{background:var(--ink-soft2);border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:11.5px;display:flex;align-items:center;gap:6px;}
+  .badge.earned{border-color:var(--marigold);color:var(--marigold);}
+
+  .scenario-card{padding:22px;text-align:center;}
+  .scenario-card .headline{font-size:16px;font-weight:600;line-height:1.4;margin:14px 0 18px;min-height:66px;display:flex;align-items:center;justify-content:center;}
+  .bull-bear{display:flex;gap:10px;justify-content:center;}
+  .bull-bear button{flex:1;max-width:160px;padding:14px;border-radius:11px;font-weight:700;font-size:14px;border:1px solid var(--line);background:var(--ink-soft2);color:var(--parchment);}
+  .bull-bear button.bull:hover{border-color:var(--leaf);color:var(--leaf);}
+  .bull-bear button.bear:hover{border-color:var(--rhodo);color:var(--rhodo);}
+
+  /* toast */
+  #toastHost{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:300;}
+  .toast{background:var(--ink-soft2);border:1px solid var(--line);border-left:4px solid var(--marigold);border-radius:9px;padding:11px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,0.4);animation:toastIn .2s ease;max-width:300px;}
+  .toast.err{border-left-color:var(--rhodo);}
+  .toast.ok{border-left-color:var(--leaf);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  .disclaimer{font-size:11px;color:var(--mist);line-height:1.6;padding:24px 0 10px;border-top:1px solid var(--line);margin-top:30px;}
+  .disclaimer b{color:var(--mist);}
+
+  .two-col{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;}
+  @media (max-width:860px){
+    .two-col{grid-template-columns:1fr;}
+    .hero{flex-direction:column;align-items:flex-start;}
+    .user-chips{margin-left:0;}
+    .topbar-row{flex-wrap:wrap;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ ONBOARDING ============ -->
+<div id="onboardingOverlay">
+  <div class="onboard-card">
+    <svg class="ridge-deco" viewBox="0 0 460 54" preserveAspectRatio="none">
+      <polyline points="0,54 0,40 40,18 70,34 110,10 150,30 190,16 230,38 270,14 310,32 350,8 390,28 430,20 460,36 460,54" fill="none" stroke="#f2a93b" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+    <div class="onboard-eyebrow">PAPER TRADING TERMINAL</div>
+    <h1>Galli Bazaar</h1>
+    <p class="tag">A street-market for practicing the real thing. Trade NEPSE-listed names against synchronized market data, track a verifiable performance record, and compare it against other traders on the leaderboard — with simulated capital, not real rupees.</p>
+    <div class="onboard-grant"><div class="og-lbl">Starting balance</div><div class="og-val" id="grantAmount">Rs. 1,00,000</div></div>
+    <div id="onboardingForm">
+      <label for="nameInput">Pick a display name</label>
+      <input type="text" id="nameInput" maxlength="18" placeholder="e.g. Sagarmatha_Bull" autocomplete="off">
+      <button type="button" id="onboardSubmitBtn" class="btn-primary">Open paper account</button>
+      <p id="nameError" style="color:var(--rhodo);font-size:12px;margin-top:-10px;margin-bottom:14px;display:none;">Pick a name first.</p>
+    </div>
+    <p class="onboard-foot"><b>Risk disclosure:</b> all capital shown is simulated and cannot be deposited, withdrawn, or converted to real currency. Market data is best-effort, sourced from unofficial community tooling, and may be delayed, incorrect, or simulated. Galli Bazaar is not affiliated with NEPSE, SEBON, or any licensed broker, and nothing here is investment advice.</p>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appRoot" class="hidden">
+
+  <header class="topbar">
+    <div class="wrap topbar-row">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 32 32"><circle cx="16" cy="9" r="3.4" fill="#f2a93b"/><path d="M2 27 L11 13 L16 20 L21 11 L30 27 Z" fill="#4f9d69" opacity="0.85"/><rect x="4" y="27" width="24" height="2.4" rx="1.2" fill="#ede6d6" opacity="0.5"/></svg>
+        <h1>Galli Bazaar</h1>
+      </div>
+      <div class="data-status sim" id="dataStatus"><span class="dot"></span><span id="dataStatusText">Checking feed…</span></div>
+      <div class="user-chips">
+        <div class="chip cash"><div class="lbl">Cash</div><div class="val" id="chipCash">—</div></div>
+        <div class="chip net"><div class="lbl">Net Worth</div><div class="val" id="chipNet">—</div></div>
+      </div>
+    </div>
+    <div class="ticker-tape"><div class="ticker-track" id="tickerTrack"></div></div>
+    <div class="wrap"><nav class="tabs" id="tabNav">
+      <button data-tab="markets" class="active">Markets</button>
+      <button data-tab="portfolio">Portfolio</button>
+      <button data-tab="leaderboard">Leaderboard</button>
+      <button data-tab="community">Community</button>
+      <button data-tab="learn">Learn</button>
+    </nav></div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- MARKETS -->
+    <section class="section active" id="tab-markets">
+      <div class="hero">
+        <div>
+          <h2>Practice on real NEPSE tickers,<br>with simulated capital.</h2>
+          <p>Quotes below update automatically. We attempt a live unofficial NEPSE feed first and fall back to a synchronized simulation when it's unavailable — the feed badge above always shows which one you're seeing.</p>
+        </div>
+        <div class="stat-row" id="marketStats"></div>
+      </div>
+
+      <div class="card index-card">
+        <div class="index-head">
+          <div>
+            <div class="index-name-row">
+              <h3>NEPSE Composite Index</h3>
+              <span class="index-methodology-tag" id="idxMethodTag" title="Illustrative composite across this watchlist's curated constituents, weighted by approximate float-adjusted market capitalization across all 12 NEPSE sectors (commercial banks, hydropower, insurance, microfinance, and more). Not NEPSE's official index value.">METHODOLOGY</span>
+              <span class="market-session" id="marketSession"><span class="dot"></span><span id="marketSessionText">—</span></span>
+            </div>
+            <div class="index-value-row">
+              <span class="index-value" id="idxValue">—</span>
+              <span class="pct" id="idxChangePct">—</span>
+              <span class="index-abs" id="idxChangeAbs"></span>
+            </div>
+            <div class="index-substats" id="idxSubstats"></div>
+          </div>
+          <div class="seg index-range-seg" id="idxRangeSeg">
+            <button data-range="1D" class="active">1D</button>
+            <button data-range="1W">1W</button>
+            <button data-range="1M">1M</button>
+          </div>
+        </div>
+        <div class="ridge-wrap index-chart" id="indexChart"></div>
+        <div class="index-foot" id="idxFoot"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Market movers</h3><span class="sec-tag" id="moversSourceTag"></span></div>
+        <div class="movers-grid" id="moversGrid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3 id="watchlistTitle">Watchlist</h3>
+          <input class="search-box" id="stockSearch" placeholder="Search symbol or sector…">
+        </div>
+        <table>
+          <thead><tr><th>Security</th><th>Sector</th><th>Price</th><th>Change</th><th>Holding</th></tr></thead>
+          <tbody id="marketsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PORTFOLIO -->
+    <section class="section" id="tab-portfolio">
+      <div class="hero">
+        <div>
+          <h2>Your portfolio</h2>
+          <p>This line is your net worth, drawn as a ridgeline — every trade reshapes the skyline.</p>
+        </div>
+        <div class="stat-row" id="portfolioStats"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Net worth over time</h3></div>
+        <div class="ridge-wrap" id="netWorthChart" style="padding:10px 18px 0;"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Holdings</h3></div>
+        <table>
+          <thead><tr><th>Security</th><th>Qty</th><th>Avg cost</th><th>Price</th><th>Value</th><th>P&amp;L</th></tr></thead>
+          <tbody id="holdingsBody"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Transaction history</h3>
+          <button class="btn small ghost" id="resetBtn">Reset my portfolio</button>
+        </div>
+        <table>
+          <thead><tr><th>Time</th><th>Action</th><th>Security</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <tbody id="txBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section class="section" id="tab-leaderboard">
+      <div class="hero">
+        <div><h2>Leaderboard</h2><p>Ranked across every trader on this platform, updated live as positions move.</p></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="seg" style="margin:0;width:280px;">
+            <button id="lbModeNet" class="active">Net worth</button>
+            <button id="lbModeLit">Literacy score</button>
+          </div>
+          <button class="btn small" id="lbRefresh">Refresh</button>
+        </div>
+        <div id="lbList"></div>
+      </div>
+    </section>
+
+    <!-- COMMUNITY -->
+    <section class="section" id="tab-community">
+      <div class="hero"><div><h2>Community feed</h2><p>Talk through a position, share a thesis, ask a dumb question — that's what the platform is for.</p></div></div>
+      <div class="card">
+        <div class="card-head"><h3>Post to the feed</h3></div>
+        <div class="modal-body" style="padding:14px 18px 18px;">
+          <div class="field-row" style="margin:0;">
+            <select id="postSymbol" class="search-box" style="width:130px;"></select>
+            <input type="text" id="postText" placeholder="Share a thought on this stock…" style="flex:1;background:var(--ink);border:1px solid var(--line);color:var(--parchment);padding:11px 13px;border-radius:8px;font-size:13.5px;">
+            <button class="btn buy small" id="postBtn">Post</button>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-head"><h3>Recent activity</h3></div><div id="feedList"></div></div>
+    </section>
+
+    <!-- LEARN -->
+    <section class="section" id="tab-learn">
+      <div class="hero"><div><h2>Financial literacy</h2><p>Two quick games. Both feed your literacy score, which shows up on its own leaderboard.</p></div></div>
+      <div class="two-col">
+        <div class="card quiz-card" id="quizCard">
+          <div class="quiz-meta"><span id="quizProgress">Question 1</span><span id="quizScore">Score 0</span></div>
+          <div class="quiz-q" id="quizQ"></div>
+          <div id="quizOpts"></div>
+          <div class="explain hidden" id="quizExplain"></div>
+          <button class="btn full hidden" id="quizNextBtn" style="margin-top:14px;">Next question →</button>
+        </div>
+        <div class="card scenario-card" id="scenarioCard">
+          <div class="quiz-meta" style="text-align:left;"><span id="scenarioProgress">Scenario 1</span><span id="scenarioScore">Score 0</span></div>
+          <h3 style="font-size:13.5px;color:var(--mist);font-weight:600;">Bull or bear?</h3>
+          <div class="headline" id="scenarioHeadline"></div>
+          <div class="bull-bear" id="scenarioBtns">
+            <button class="bull" data-call="bull">▲ Bullish</button>
+            <button class="bear" data-call="bear">▼ Bearish</button>
+          </div>
+          <div class="explain hidden" id="scenarioExplain"></div>
+          <button class="btn full hidden" id="scenarioNextBtn" style="margin-top:14px;">Next scenario →</button>
+        </div>
+      </div>
+      <div class="card" style="padding:18px 22px;">
+        <h3 style="font-size:14px;margin-bottom:6px;">Your badges</h3>
+        <div class="badge-row" id="badgeRow"></div>
+      </div>
+    </section>
+
+    <div class="disclaimer">
+      <b>What this is:</b> Galli Bazaar is an independent, non-commercial learning project. All currency shown is fictional and cannot be deposited, withdrawn, or converted. <b>What this isn't:</b> a broker, an exchange, or financial advice — it has no affiliation with NEPSE, SEBON, MeroShare, or any licensed brokerage. Market data, including the composite index shown above, is pulled on a best-effort basis from unofficial, community-maintained tools (credit: the open-source NepseAPI-Unofficial project) and automatically falls back to a synchronized simulation when that feed is unavailable — never use prices shown here to inform a real trade. <b>Coverage:</b> when the live feed is reachable, the Markets tab shows NEPSE's real, full list of traded equities; when it isn't, trading falls back to a smaller curated list of real, verified companies across every NEPSE sector. Either way, only ordinary equity shares are included — debentures, government bonds, mutual fund units, and promoter shares are intentionally left out, since those aren't traded here the way ordinary company stock is.
+    </div>
+  </main>
+</div>
+
+<!-- STOCK MODAL -->
+<div class="modal-overlay hidden" id="stockModalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="sec-tag" id="modalSector">—</div>
+        <h2 id="modalName" style="font-size:20px;"></h2>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-top:4px;">
+          <span class="px" id="modalPrice" style="font-size:20px;font-weight:600;"></span>
+          <span class="pct" id="modalChange"></span>
+        </div>
+      </div>
+      <button class="modal-close" id="closeModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="ridge-wrap" id="modalChart"></div>
+      <div class="seg">
+        <button id="modeBuy" class="active">Buy</button>
+        <button id="modeSell">Sell</button>
+      </div>
+      <div class="field-row">
+        <button class="qty-btn" id="qtyMinus">−</button>
+        <input type="number" id="qtyInput" min="1" value="1">
+        <button class="qty-btn" id="qtyPlus">+</button>
+      </div>
+      <div class="trade-summary">
+        <div><span>Price / share</span><b id="sumPrice">—</b></div>
+        <div><span>Quantity</span><b id="sumQty">—</b></div>
+        <div><span id="sumTotalLabel">Estimated cost</span><b id="sumTotal">—</b></div>
+        <div><span id="sumAfterLabel">Cash after</span><b id="sumAfter">—</b></div>
+      </div>
+      <button class="btn buy full" id="tradeBtn">Buy</button>
+      <p id="tradeError" style="color:var(--rhodo);font-size:12.5px;margin-top:8px;display:none;"></p>
+
+      <div style="margin-top:24px;">
+        <h3 style="font-size:13.5px;color:var(--mist);margin-bottom:6px;">Discussion</h3>
+        <div class="post-form">
+          <input type="text" id="modalPostText" placeholder="What's your take on this one?">
+          <button class="btn small" id="modalPostBtn">Post</button>
+        </div>
+        <div id="modalThread"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastHost"></div>
+
+<!-- Optional shared backend: only used once SUPABASE_URL/SUPABASE_ANON_KEY below are
+     filled in AND this file is running outside Claude.ai. Loaded synchronously so it's
+     ready before the app script runs; if it fails to load (offline, blocked, etc.) the
+     app below detects that and falls back to local-only mode automatically. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== STORAGE HELPERS ===================== */
+// Three-tier storage, chosen automatically at load time:
+//  1. 'claude'   — window.storage, only exists inside Claude.ai's artifact runtime.
+//  2. 'supabase' — used for SHARED data (leaderboard, community posts) once you fill
+//                  in SUPABASE_URL/SUPABASE_ANON_KEY below and run the SQL in the
+//                  deployment guide. Requires the CDN script tag above to have loaded.
+//  3. 'local'    — plain localStorage fallback, per-browser only, zero setup.
+// Personal data (portfolio, holdings, quiz progress) always stays local/per-browser —
+// there's no need to sync that across devices for this app.
+//
+// ↓↓↓ Fill these in after creating a free Supabase project (see deployment guide) ↓↓↓
+const SUPABASE_URL = '';       // e.g. 'https://abcdefghijkl.supabase.co'
+const SUPABASE_ANON_KEY = '';  // the "anon public" key from Settings → API
+// ↑↑↑ Leave both blank to run in local-only mode — the app works fine without them ↑↑↑
+
+const HAS_CLAUDE_STORAGE = (typeof window!=='undefined') && !!window.storage && typeof window.storage.get==='function';
+const SUPABASE_READY = !HAS_CLAUDE_STORAGE && !!SUPABASE_URL && !!SUPABASE_ANON_KEY &&
+  (typeof window!=='undefined') && !!window.supabase && typeof window.supabase.createClient==='function';
+const supaClient = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const Store = {
+  mode: HAS_CLAUDE_STORAGE ? 'claude' : (SUPABASE_READY ? 'supabase' : 'local'),
+  async get(key, shared=false){
+    if(HAS_CLAUDE_STORAGE){
+      try{ const r = await window.storage.get(key, shared); return r ? JSON.parse(r.value) : null; }
+      catch(e){ return null; }
+    }
+    if(shared && SUPABASE_READY){
+      try{
+        const {data, error} = await supaClient.from('kv_store').select('value').eq('key', key).maybeSingle();
+        if(error || !data) return null;
+        return data.value;
+      }catch(e){ console.error('supabase get failed', key, e); return null; }
+    }
+    try{
+      const raw = localStorage.getItem((shared?'gb_shared:':'gb_local:')+key);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  },
+  async set(key, value, shared=false){
+    if(HAS_CLAUDE_STORAGE){
+      try{ return await window.storage.set(key, JSON.stringify(value), shared); }
+      catch(e){ console.error('storage set failed', key, e); return null; }
+    }
+    if(shared && SUPABASE_READY){
+      try{
+        const {error} = await supaClient.from('kv_store').upsert({key, value, updated_at:new Date().toISOString()});
+        if(error){ console.error('supabase set failed', key, error); return null; }
+        return {key, value, shared};
+      }catch(e){ console.error('supabase set failed', key, e); return null; }
+    }
+    try{
+      localStorage.setItem((shared?'gb_shared:':'gb_local:')+key, JSON.stringify(value));
+      return {key, value, shared};
+    }catch(e){ console.error('storage set failed', key, e); return null; }
+  },
+  async list(prefix, shared=false){
+    if(HAS_CLAUDE_STORAGE){
+      try{ const r = await window.storage.list(prefix, shared); return (r && r.keys) ? r.keys : []; }
+      catch(e){ return []; }
+    }
+    if(shared && SUPABASE_READY){
+      try{
+        const {data, error} = await supaClient.from('kv_store').select('key').like('key', (prefix||'')+'%').limit(500);
+        if(error || !data) return [];
+        return data.map(r=>r.key);
+      }catch(e){ console.error('supabase list failed', prefix, e); return []; }
+    }
+    try{
+      const bucket = shared?'gb_shared:':'gb_local:';
+      const full = bucket+(prefix||'');
+      const keys = [];
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(k && k.indexOf(full)===0) keys.push(k.slice(bucket.length));
+      }
+      return keys;
+    }catch(e){ return []; }
+  }
+};
+
+/* ===================== DETERMINISTIC PRNG (synchronized sim) ===================== */
+function strHash(str){
+  let h = 1779033703 ^ str.length;
+  for(let i=0;i<str.length;i++){
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function(){
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+function seededRand(seedStr){ return strHash(seedStr)(); }
+function dayKey(d){ d = d || new Date(); return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); }
+
+/* ===================== STOCK UNIVERSE =====================
+   Curated fallback list used when the live feed is unavailable — every entry below
+   is a real NEPSE-listed operating company (symbol, name, and sector verified against
+   NEPSE's own company listings). "base" is an illustrative starting price used only to
+   seed the offline simulation, not a claim about the real current price. Ordinary
+   equity shares only — debentures, government bonds, mutual fund units, and promoter
+   shares are intentionally excluded, since those aren't "stocks" in the sense this
+   app trades. When the live feed IS reachable, the app shows the real, full market
+   (260+ securities) automatically — see mapLiveData / renderMarkets. */
+const STOCKS = [
+  // Commercial Banks — full sector (19 of 19 listed commercial banks)
+  {sym:'ADBL',  name:'Agriculture Development Bank Ltd.', sector:'Commercial Bank', base:320},
+  {sym:'CZBIL', name:'Citizens Bank International Ltd.', sector:'Commercial Bank', base:210},
+  {sym:'EBL',   name:'Everest Bank Ltd.', sector:'Commercial Bank', base:352},
+  {sym:'GBIME', name:'Global IME Bank Ltd.', sector:'Commercial Bank', base:243},
+  {sym:'HBL',   name:'Himalayan Bank Ltd.', sector:'Commercial Bank', base:406},
+  {sym:'KBL',   name:'Kumari Bank Ltd.', sector:'Commercial Bank', base:225},
+  {sym:'MBL',   name:'Machhapuchchhre Bank Ltd.', sector:'Commercial Bank', base:210},
+  {sym:'NABIL', name:'Nabil Bank Ltd.', sector:'Commercial Bank', base:478},
+  {sym:'NBL',   name:'Nepal Bank Ltd.', sector:'Commercial Bank', base:280},
+  {sym:'NICA',  name:'NIC Asia Bank Ltd.', sector:'Commercial Bank', base:318},
+  {sym:'NMB',   name:'NMB Bank Ltd.', sector:'Commercial Bank', base:204},
+  {sym:'PCBL',  name:'Prime Commercial Bank Ltd.', sector:'Commercial Bank', base:213},
+  {sym:'SANIMA',name:'Sanima Bank Ltd.', sector:'Commercial Bank', base:280},
+  {sym:'SBI',   name:'Nepal SBI Bank Ltd.', sector:'Commercial Bank', base:260},
+  {sym:'SBL',   name:'Siddhartha Bank Ltd.', sector:'Commercial Bank', base:228},
+  {sym:'SCB',   name:'Standard Chartered Bank Nepal Ltd.', sector:'Commercial Bank', base:282},
+  {sym:'PRVU',  name:'Prabhu Bank Ltd.', sector:'Commercial Bank', base:230},
+  {sym:'NIMB',  name:'Nepal Investment Mega Bank Ltd.', sector:'Commercial Bank', base:296},
+  {sym:'LSL',   name:'Laxmi Sunrise Bank Ltd.', sector:'Commercial Bank', base:200},
+  // Development Banks
+  {sym:'MNBBL', name:'Muktinath Bikas Bank Ltd.', sector:'Development Bank', base:280},
+  {sym:'JBBL',  name:'Jyoti Bikas Bank Ltd.', sector:'Development Bank', base:230},
+  {sym:'GBBL',  name:'Garima Bikas Bank Ltd.', sector:'Development Bank', base:250},
+  {sym:'SADBL', name:'Shangrila Development Bank Ltd.', sector:'Development Bank', base:230},
+  {sym:'SHINE', name:'Shine Resunga Development Bank Ltd.', sector:'Development Bank', base:250},
+  // Finance
+  {sym:'CFCL',  name:'Central Finance Co. Ltd.', sector:'Finance', base:200},
+  {sym:'ICFC',  name:'ICFC Finance Ltd.', sector:'Finance', base:210},
+  {sym:'MFIL',  name:'Manjushree Finance Ltd.', sector:'Finance', base:220},
+  {sym:'PFL',   name:'Pokhara Finance Ltd.', sector:'Finance', base:200},
+  {sym:'GUFL',  name:'Gurkhas Finance Ltd.', sector:'Finance', base:190},
+  // Hotels & Tourism
+  {sym:'OHL',   name:'Oriental Hotels Ltd.', sector:'Hotels & Tourism', base:180},
+  {sym:'SHL',   name:'Soaltee Hotel Ltd.', sector:'Hotels & Tourism', base:220},
+  {sym:'TRH',   name:'Taragaon Regency Hotel Ltd.', sector:'Hotels & Tourism', base:250},
+  {sym:'CGH',   name:'Chandragiri Hills Ltd.', sector:'Hotels & Tourism', base:350},
+  {sym:'CITY',  name:'City Hotel Ltd.', sector:'Hotels & Tourism', base:180},
+  // Hydropower
+  {sym:'CHCL',  name:'Chilime Hydropower Co. Ltd.', sector:'Hydropower', base:412},
+  {sym:'UPPER', name:'Upper Tamakoshi Hydropower Ltd.', sector:'Hydropower', base:294},
+  {sym:'API',   name:'Api Power Company Ltd.', sector:'Hydropower', base:248},
+  {sym:'NYADI', name:'Nyadi Hydropower Ltd.', sector:'Hydropower', base:142},
+  {sym:'AHPC',  name:'Arun Valley Hydropower Dev. Co. Ltd.', sector:'Hydropower', base:300},
+  {sym:'BPCL',  name:'Butwal Power Company Ltd.', sector:'Hydropower', base:330},
+  {sym:'NHPC',  name:'National Hydro Power Company Ltd.', sector:'Hydropower', base:180},
+  {sym:'SHPC',  name:'Sanima Mai Hydropower Ltd.', sector:'Hydropower', base:350},
+  {sym:'RHPL',  name:'Rasuwagadhi Hydropower Co. Ltd.', sector:'Hydropower', base:250},
+  {sym:'SJCL',  name:'Sanjen Jalavidhyut Company Ltd.', sector:'Hydropower', base:230},
+  {sym:'HPPL',  name:'Himalayan Power Partner Ltd.', sector:'Hydropower', base:200},
+  {sym:'SAHAS', name:'Sahas Urja Ltd.', sector:'Hydropower', base:270},
+  // Investment
+  {sym:'CIT',   name:'Citizens Investment Trust', sector:'Investment', base:1840},
+  {sym:'HIDCL', name:'Hydroelectricity Inv. & Dev. Co. Ltd.', sector:'Investment', base:218},
+  {sym:'NIFRA', name:'Nepal Infrastructure Bank Ltd.', sector:'Investment', base:95},
+  {sym:'ENL',   name:'Emerging Nepal Ltd.', sector:'Investment', base:450},
+  {sym:'NRN',   name:'NRN Infrastructure & Dev. Ltd.', sector:'Investment', base:140},
+  // Life Insurance
+  {sym:'NLIC',  name:'Nepal Life Insurance Co. Ltd.', sector:'Life Insurance', base:842},
+  {sym:'NLICL', name:'National Life Insurance Co. Ltd.', sector:'Life Insurance', base:615},
+  {sym:'ALICL', name:'Asian Life Insurance Co. Ltd.', sector:'Life Insurance', base:480},
+  {sym:'LICN',  name:'Life Insurance Corporation (Nepal) Ltd.', sector:'Life Insurance', base:650},
+  {sym:'CLI',   name:'Citizen Life Insurance Co. Ltd.', sector:'Life Insurance', base:420},
+  {sym:'HLI',   name:'Himalayan Life Insurance Ltd.', sector:'Life Insurance', base:460},
+  {sym:'SJLIC', name:'SuryaJyoti Life Insurance Co. Ltd.', sector:'Life Insurance', base:380},
+  // Manufacturing & Processing
+  {sym:'BNL',   name:'Bottlers Nepal (Balaju) Ltd.', sector:'Manufacturing & Processing', base:2600},
+  {sym:'UNL',   name:'Unilever Nepal Ltd.', sector:'Manufacturing & Processing', base:15000},
+  {sym:'SHIVM', name:'Shivam Cements Ltd.', sector:'Manufacturing & Processing', base:450},
+  {sym:'HDL',   name:'Himalayan Distillery Ltd.', sector:'Manufacturing & Processing', base:700},
+  // Microfinance
+  {sym:'CBBL',  name:'Chhimek Laghubitta Bittiya Sanstha Ltd.', sector:'Microfinance', base:850},
+  {sym:'NUBL',  name:'Nirdhan Utthan Laghubitta Bittiya Sanstha Ltd.', sector:'Microfinance', base:950},
+  {sym:'SKBBL', name:'Sana Kisan Bikas Laghubitta Bittiya Sanstha Ltd.', sector:'Microfinance', base:700},
+  {sym:'NMBMF', name:'NMB Laghubitta Bittiya Sanstha Ltd.', sector:'Microfinance', base:600},
+  {sym:'FMDBL', name:'First Microfinance Laghubitta Bittiya Sanstha Ltd.', sector:'Microfinance', base:650},
+  // Non-Life Insurance
+  {sym:'NICL',  name:'Nepal Insurance Co. Ltd.', sector:'Non-Life Insurance', base:774},
+  {sym:'SICL',  name:'Shikhar Insurance Co. Ltd.', sector:'Non-Life Insurance', base:750},
+  {sym:'NLG',   name:'NLG Insurance Company Ltd.', sector:'Non-Life Insurance', base:650},
+  {sym:'PRIN',  name:'Prabhu Insurance Ltd.', sector:'Non-Life Insurance', base:550},
+  {sym:'IGI',   name:'IGI Prudential Insurance Co. Ltd.', sector:'Non-Life Insurance', base:500},
+  {sym:'SGIC',  name:'Sanima GIC Insurance Ltd.', sector:'Non-Life Insurance', base:480},
+  // Others
+  {sym:'NTC',   name:'Nepal Doorsanchar Company Ltd. (Nepal Telecom)', sector:'Others', base:864},
+  {sym:'NRIC',  name:'Nepal Re-Insurance Company Ltd.', sector:'Others', base:450},
+  {sym:'HRL',   name:'Himalayan Reinsurance Ltd.', sector:'Others', base:380},
+  {sym:'MKCL',  name:'Muktinath Krishi Company Ltd.', sector:'Others', base:250},
+  // Trading
+  {sym:'BBC',   name:'Bishal Bazar Company Ltd.', sector:'Trading', base:1500},
+  {sym:'STC',   name:'Salt Trading Corporation Ltd.', sector:'Trading', base:1100},
+];
+const SYMS = STOCKS.map(s=>s.sym);
+
+/* ===================== COMPOSITE INDEX CONFIG ===================== */
+// Illustrative per-sector weight tiers approximating each sector's relative
+// real-world share of NEPSE's actual market capitalization (banking/insurance
+// dominant, hydropower a distant second, etc.) — not official NEPSE weights.
+const SECTOR_INDEX_WEIGHT = {
+  'Commercial Bank': 8, 'Life Insurance': 5, 'Non-Life Insurance': 4,
+  'Development Bank': 3, 'Finance': 2, 'Microfinance': 2, 'Hydropower': 3,
+  'Investment': 4, 'Hotels & Tourism': 2, 'Manufacturing & Processing': 3,
+  'Others': 4, 'Trading': 2
+};
+const INDEX_WEIGHTS = {};
+STOCKS.forEach(s=>{ INDEX_WEIGHTS[s.sym] = SECTOR_INDEX_WEIGHT[s.sector] || 2; });
+const INDEX_BASE = 2620; // illustrative starting level, in index points
+
+/* ===================== STATE ===================== */
+const STATE = {
+  profile:null, holdings:{}, transactions:[], netWorthHistory:[],
+  quizProgress:null, scenarioProgress:null,
+  market:{}, dataMode:'sim', lastFetch:0,
+  activeStockSym:null, modalMode:'buy',
+  lbMode:'net',
+  indexDaily:null, indexNow:null, indexRange:'1D',
+  liveIndexInfo:null, liveSummaryInfo:null, liveGainers:null, liveLosers:null,
+  liveMeta:{}
+};
+
+/* ===================== UTIL ===================== */
+function fmtNPR(num, decimals){
+  decimals = decimals||0;
+  const neg = num<0; num = Math.abs(num);
+  const fixed = num.toFixed(decimals);
+  let [ip, dp] = fixed.split('.');
+  const last3 = ip.slice(-3);
+  const rest = ip.slice(0,-3);
+  const grouped = rest === '' ? last3 : rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last3;
+  return (neg?'-':'') + 'Rs. ' + grouped + (decimals>0?('.'+dp):'');
+}
+function fmtPct(p){ return (p>=0?'+':'') + p.toFixed(2) + '%'; }
+function timeAgo(ts){
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return s+'s ago';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function uid(){ return 'u'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+function toast(msg, type){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast '+(type||'');
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 3200);
+}
+function stockBySym(sym){ return STOCKS.find(s=>s.sym===sym); }
+function metaFor(sym){
+  const known = stockBySym(sym);
+  if(known) return known;
+  const discovered = STATE.liveMeta && STATE.liveMeta[sym];
+  if(discovered) return {sym, name:discovered.name, sector:discovered.sector};
+  return {sym, name:sym, sector:'NEPSE Listed'};
+}
+
+/* ===================== MARKET SIMULATION / LIVE FETCH ===================== */
+function simulatedQuote(sym, base){
+  const dk = dayKey();
+  const dayOpen = base * (0.9 + 1.2*seededRand('open|'+sym+'|'+dk));
+  const bucket = Math.floor(Date.now()/45000); // 45s buckets, synced across all users
+  const r = seededRand('px|'+sym+'|'+dk+'|'+bucket);
+  const drift = (seededRand('drift|'+sym+'|'+dk)-0.5)*0.06; // daily bias
+  const wobble = (r-0.5)*0.018;
+  const price = Math.max(2, dayOpen * (1 + drift + wobble*((bucket%37)+1)/12));
+  const change = price - dayOpen;
+  const changePct = (change/dayOpen)*100;
+  // 24-point intraday history for the ridge chart
+  const hist = [];
+  for(let i=0;i<24;i++){
+    const rb = seededRand('hist|'+sym+'|'+dk+'|'+i);
+    const localDrift = drift * (i/24);
+    hist.push(dayOpen * (1 + localDrift + (rb-0.5)*0.025));
+  }
+  hist.push(price);
+  return {sym, price, change, changePct, hist, open:dayOpen};
+}
+function buildSimulatedMarket(){
+  const m = {};
+  STOCKS.forEach(s=>{ m[s.sym] = simulatedQuote(s.sym, s.base); });
+  return m;
+}
+function looksLikeOrdinaryEquity(sym){
+  // Debentures, government bonds, and most mutual funds carry a year/number in the
+  // symbol (e.g. "EBLD86", "NBF2", "NRBBR2076"); ordinary equity symbols don't.
+  // This is a heuristic, not a perfect classifier — a handful of edge cases (a few
+  // numberless mutual funds, some promoter-share symbols) may slip through.
+  return /^[A-Z]+$/.test(sym);
+}
+function mapLiveData(raw){
+  try{
+    let arr = Array.isArray(raw) ? raw : (raw && (raw.data||raw.results||raw.LiveMarket||raw.items));
+    if(!Array.isArray(arr)) return null;
+    const out = {};
+    const meta = {};
+    arr.forEach(item=>{
+      const symbol = item.symbol || item.securitySymbol || item.security || item.symbolName || item.scrip;
+      if(!symbol) return;
+      const sym = String(symbol).toUpperCase().trim();
+      if(!looksLikeOrdinaryEquity(sym)) return;
+      const price = Number(item.lastTradedPrice ?? item.ltp ?? item.closePrice ?? item.lastTradePrice ?? item.close ?? item.price);
+      if(!price || isNaN(price)) return;
+      const pctRaw = item.percentageChange ?? item.percentChange ?? item.changePercent ?? item.perChange;
+      const open = Number(item.previousClose ?? item.previousClosePrice ?? item.openPrice) || price;
+      const change = price - open;
+      const changePct = (pctRaw!==undefined && !isNaN(Number(pctRaw))) ? Number(pctRaw) : (open ? (change/open)*100 : 0);
+      out[sym] = {sym, price, change, changePct, hist:null, open};
+      if(!stockBySym(sym)){
+        const name = item.securityName || item.companyName || item.security_name || item.name;
+        const sector = item.sectorName || item.sector || item.instrumentType;
+        meta[sym] = {name: name ? String(name) : sym, sector: sector ? String(sector) : 'NEPSE Listed'};
+      }
+    });
+    if(!Object.keys(out).length) return null;
+    return {quotes: out, meta};
+  }catch(e){ return null; }
+}
+async function tryLiveFetch(){
+  try{
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 6000);
+    const res = await fetch('https://nepseapi.surajrimal.dev/LiveMarket', {signal: ctrl.signal});
+    clearTimeout(timer);
+    if(!res.ok) return null;
+    const json = await res.json();
+    return mapLiveData(json);
+  }catch(e){ return null; }
+}
+
+/* ---- Additional official-ish endpoints: NepseIndex, Summary, TopGainers/Losers ----
+   These mirror real fields NEPSE itself publishes, so when reachable they replace our
+   synthesized numbers with the genuine ones. The hosted wrapper is known to be
+   unreliable (its own README warns it "terminates randomly"), so every call here is
+   short-timeout, best-effort, and fails silently back to the simulation. */
+async function fetchNepseJSON(path, timeoutMs){
+  try{
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), timeoutMs||6000);
+    const res = await fetch('https://nepseapi.surajrimal.dev'+path, {signal: ctrl.signal});
+    clearTimeout(timer);
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){ return null; }
+}
+function firstNum(...vals){
+  for(const v of vals){ const n = Number(v); if(v!==undefined && v!==null && !isNaN(n)) return n; }
+  return undefined;
+}
+function mapNepseIndexData(raw){
+  try{
+    let arr = Array.isArray(raw) ? raw : (raw && (raw.data||raw.results||raw.indices||raw.NepseIndex));
+    if(!Array.isArray(arr)){
+      // maybe the endpoint returned a single object rather than a list
+      if(raw && typeof raw==='object') arr = [raw];
+      else return null;
+    }
+    const entry = arr.find(it=>{
+      const name = String(it.index||it.indexName||it.name||it.indices||'').toLowerCase();
+      return name.includes('nepse') && !name.includes('sensitive') && !name.includes('float');
+    }) || arr[0];
+    if(!entry) return null;
+    const value = firstNum(entry.currentValue, entry.close, entry.value, entry.ltp, entry.currentIndex, entry.indexValue);
+    if(value===undefined) return null;
+    const changeAbs = firstNum(entry.change, entry.pointChange, entry.changeValue, entry.netChange);
+    const changePct = firstNum(entry.perChange, entry.percentChange, entry.changePercent, entry.percentageChange);
+    const open = firstNum(entry.open, entry.openValue, entry.previousClose, entry.previousClosePrice);
+    const high = firstNum(entry.high, entry.highValue, entry.dayHigh);
+    const low = firstNum(entry.low, entry.lowValue, entry.dayLow);
+    const prevClose = firstNum(entry.previousClose, entry.previousClosePrice, entry.prevClose);
+    return {value, changeAbs, changePct, open, high, low, prevClose};
+  }catch(e){ return null; }
+}
+function mapSummaryData(raw){
+  try{
+    if(!raw || typeof raw!=='object') return null;
+    // Documented literal keys from the API's own examples, plus fuzzy fallbacks.
+    const turnover = firstNum(raw['Total Turnover Rs:'], raw['Total Turnover'], raw.totalTurnover, raw.turnover);
+    const shares = firstNum(raw['Total Traded Shares'], raw.totalTradedShares, raw.tradedShares);
+    const transactions = firstNum(raw['Total Transactions'], raw.totalTransactions, raw.transactions);
+    const scrips = firstNum(raw['Total Scrips Traded'], raw.totalScripsTraded, raw.scripsTraded);
+    if([turnover, shares, transactions, scrips].every(v=>v===undefined)) return null;
+    return {turnover, shares, transactions, scrips};
+  }catch(e){ return null; }
+}
+function mapMoversData(raw, limit){
+  try{
+    let arr = Array.isArray(raw) ? raw : (raw && (raw.data||raw.results||raw.items));
+    if(!Array.isArray(arr)) return null;
+    const out = arr.map(item=>{
+      const symbol = item.symbol || item.securitySymbol || item.security || item.symbolName || item.scrip;
+      const price = firstNum(item.lastTradedPrice, item.ltp, item.closePrice, item.close, item.price);
+      const changePct = firstNum(item.percentageChange, item.percentChange, item.changePercent, item.perChange);
+      if(!symbol || price===undefined) return null;
+      return {sym:String(symbol).toUpperCase().trim(), price, changePct: changePct||0};
+    }).filter(Boolean);
+    return out.length ? out.slice(0, limit||5) : null;
+  }catch(e){ return null; }
+}
+async function fetchExtraNepseData(){
+  const [idxRes, sumRes, gainRes, loseRes] = await Promise.allSettled([
+    fetchNepseJSON('/NepseIndex'),
+    fetchNepseJSON('/Summary'),
+    fetchNepseJSON('/TopGainers'),
+    fetchNepseJSON('/TopLosers'),
+  ]);
+  STATE.liveIndexInfo = (idxRes.status==='fulfilled') ? mapNepseIndexData(idxRes.value) : null;
+  STATE.liveSummaryInfo = (sumRes.status==='fulfilled') ? mapSummaryData(sumRes.value) : null;
+  STATE.liveGainers = (gainRes.status==='fulfilled') ? mapMoversData(gainRes.value, 5) : null;
+  STATE.liveLosers = (loseRes.status==='fulfilled') ? mapMoversData(loseRes.value, 5) : null;
+}
+
+async function refreshMarket(){
+  const [liveResult] = await Promise.all([ tryLiveFetch(), fetchExtraNepseData() ]);
+  if(liveResult){
+    const live = liveResult.quotes;
+    STATE.liveMeta = liveResult.meta || {};
+    // backfill history for curated symbols the live feed didn't cover, using simulation.
+    // Symbols the live feed discovered beyond our curated list get no synthetic
+    // history — they only exist while the live feed is actually returning them.
+    const sim = buildSimulatedMarket();
+    SYMS.forEach(sym=>{
+      if(live[sym] && !live[sym].hist) live[sym].hist = sim[sym].hist.slice(0,-1).concat([live[sym].price]);
+      if(!live[sym]) live[sym] = sim[sym];
+    });
+    STATE.market = live;
+    STATE.dataMode = 'live';
+  } else {
+    STATE.market = buildSimulatedMarket();
+    STATE.liveMeta = {};
+    STATE.dataMode = 'sim';
+  }
+  STATE.lastFetch = Date.now();
+  updateIndexState();
+  renderDataStatus();
+  renderTicker();
+  if(document.getElementById('tab-markets').classList.contains('active')) renderMarkets();
+  if(document.getElementById('tab-portfolio').classList.contains('active')) renderPortfolio();
+  if(STATE.activeStockSym) renderStockModalQuote();
+}
+function renderDataStatus(){
+  const el = document.getElementById('dataStatus');
+  const txt = document.getElementById('dataStatusText');
+  if(STATE.dataMode==='live'){
+    el.className='data-status live';
+    txt.textContent = 'Live unofficial feed · updated '+timeAgo(STATE.lastFetch);
+  } else {
+    el.className='data-status sim';
+    txt.textContent = 'Simulated demo data · synced '+timeAgo(STATE.lastFetch);
+  }
+}
+setInterval(()=>{ if(STATE.lastFetch) renderDataStatus(); }, 15000);
+
+/* ===================== RIDGE CHART (signature element) ===================== */
+function ridgeSVG(values, opts){
+  opts = opts||{};
+  const w = opts.w||560, h = opts.h||120, pad=6;
+  if(!values || values.length<2) values = [0,0];
+  const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+  const range = (max-min) || 1;
+  const stepX = (w-pad*2)/(values.length-1);
+  const pts = values.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = pad + (h-pad*2) * (1 - (v-min)/range);
+    return [x,y];
+  });
+  const lineStr = pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const fillStr = lineStr + ' ' + (w-pad)+','+(h-pad) + ' ' + pad+','+(h-pad);
+  const up = values[values.length-1] >= values[0];
+  const stroke = opts.color || (up? '#4f9d69' : '#c9483a');
+  const gradId = 'g'+Math.random().toString(36).slice(2,8);
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${opts.height||140}px;">
+    <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${stroke}" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <polygon points="${fillStr}" fill="url(#${gradId})"/>
+    <polyline points="${lineStr}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* ===================== LINE CHART (index, with gridlines) ===================== */
+function indexLineSVG(values, opts){
+  opts = opts||{};
+  const w = opts.w||900, h = opts.h||opts.height||200;
+  const padL=48, padR=10, padT=14, padB=22;
+  if(!values || values.length<2){ const v = (values&&values[0])||0; values=[v,v]; }
+  const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+  const range = (max-min) || Math.max(1, min*0.01);
+  const innerW = w-padL-padR, innerH = h-padT-padB;
+  const stepX = innerW/(values.length-1);
+  const pts = values.map((v,i)=>{
+    const x = padL+i*stepX;
+    const y = padT + innerH*(1-(v-min)/range);
+    return [x,y];
+  });
+  const lineStr = pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const fillStr = lineStr+' '+(padL+innerW).toFixed(1)+','+(padT+innerH)+' '+padL.toFixed(1)+','+(padT+innerH);
+  const up = values[values.length-1] >= values[0];
+  const stroke = up ? '#4f9d69' : '#c9483a';
+  const gradId = 'ig'+Math.random().toString(36).slice(2,8);
+  let grid = '';
+  for(let g=0; g<=3; g++){
+    const gy = padT + innerH*(g/3);
+    const gv = max - range*(g/3);
+    grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${(padL+innerW).toFixed(1)}" y2="${gy.toFixed(1)}" stroke="rgba(237,230,214,0.08)" stroke-width="1"/>`;
+    grid += `<text x="${(padL-8).toFixed(1)}" y="${(gy+3).toFixed(1)}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="#8fa39a">${gv.toFixed(0)}</text>`;
+  }
+  const lastPt = pts[pts.length-1];
+  const labelRow = `<text x="${padL}" y="${h-6}" font-family="IBM Plex Mono, monospace" font-size="10" fill="#8fa39a">${opts.startLabel||''}</text>
+    <text x="${(padL+innerW).toFixed(1)}" y="${h-6}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#8fa39a">${opts.endLabel||''}</text>`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${opts.height||200}px;width:100%;">
+    <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${stroke}" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    <polygon points="${fillStr}" fill="url(#${gradId})"/>
+    <polyline points="${lineStr}" fill="none" stroke="${stroke}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastPt[0].toFixed(1)}" cy="${lastPt[1].toFixed(1)}" r="3.5" fill="${stroke}"/>
+    ${labelRow}
+  </svg>`;
+}
+
+/* ===================== COMPOSITE INDEX ===================== */
+function nepalDateParts(d){
+  const parts = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Kathmandu', year:'numeric', month:'2-digit', day:'2-digit', weekday:'short'}).formatToParts(d);
+  const map = {}; parts.forEach(p=>map[p.type]=p.value);
+  return {key: map.year+'-'+map.month+'-'+map.day, wd: map.weekday};
+}
+function nepalNow(){
+  const parts = new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Kathmandu', hour12:false, weekday:'short', hour:'2-digit', minute:'2-digit'}).formatToParts(new Date());
+  const map = {}; parts.forEach(p=>map[p.type]=p.value);
+  return {weekday: map.weekday, hour: parseInt(map.hour,10), minute: parseInt(map.minute,10)};
+}
+function marketSessionStatus(){
+  const {weekday, hour, minute} = nepalNow();
+  const isWeekday = ['Mon','Tue','Wed','Thu','Fri'].includes(weekday);
+  const minutesNow = hour*60+minute;
+  const isOpen = isWeekday && minutesNow>=(11*60) && minutesNow<(15*60);
+  return {isOpen};
+}
+function weekdayShort(ts){ return new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Kathmandu', weekday:'short'}).format(new Date(ts)); }
+function dateShort(ts){ return new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Kathmandu', day:'numeric', month:'short'}).format(new Date(ts)); }
+
+function buildIndexDailyHistory(sessions){
+  const out = [];
+  let daysBack = 1;
+  const now = Date.now();
+  while(out.length < sessions && daysBack < 90){
+    const t = now - daysBack*86400000;
+    const np = nepalDateParts(new Date(t));
+    if(np.wd!=='Sat' && np.wd!=='Sun') out.push({key:np.key, ts:t});
+    daysBack++;
+  }
+  out.reverse(); // oldest first, most recent completed session last
+  let val = INDEX_BASE;
+  return out.map(o=>{
+    const r = seededRand('idxclose|'+o.key);
+    const move = (r-0.5)*0.024;
+    val = Math.max(300, val*(1+move));
+    return {key:o.key, ts:o.ts, close:val};
+  });
+}
+function buildIndexIntraday(){
+  const n = 25;
+  const composite = [];
+  for(let i=0;i<n;i++){
+    let sum=0, weightSum=0;
+    STOCKS.forEach(s=>{
+      const q = STATE.market[s.sym];
+      if(q && q.hist && q.hist[i]!==undefined && q.open){
+        const w = INDEX_WEIGHTS[s.sym]||1;
+        sum += (q.hist[i]/q.open)*w;
+        weightSum += w;
+      }
+    });
+    if(weightSum) composite.push(sum/weightSum);
+  }
+  return composite;
+}
+function computeIndexToday(prevClose){
+  const dk = dayKey();
+  const gapSeed = (seededRand('idxgap|'+dk)-0.5)*0.01;
+  const openToday = prevClose*(1+gapSeed);
+  let weightedChange=0, totalWeight=0;
+  STOCKS.forEach(s=>{
+    const q = STATE.market[s.sym]; if(!q) return;
+    const w = INDEX_WEIGHTS[s.sym]||1;
+    weightedChange += (q.changePct||0)*w;
+    totalWeight += w;
+  });
+  const avgChangePct = totalWeight? weightedChange/totalWeight : 0;
+  const liveValue = openToday*(1+avgChangePct/100);
+  return {openToday, liveValue};
+}
+function updateIndexState(){
+  if(!STATE.indexDaily) STATE.indexDaily = buildIndexDailyHistory(29);
+  const simPrevClose = STATE.indexDaily[STATE.indexDaily.length-1].close;
+
+  const info = STATE.liveIndexInfo;
+  if(info && info.value!==undefined){
+    // Derive a previous-close anchor from whatever the real feed gave us.
+    let prevClose = info.prevClose;
+    if(prevClose===undefined && info.changeAbs!==undefined) prevClose = info.value - info.changeAbs;
+    if(prevClose===undefined && info.changePct!==undefined) prevClose = info.value / (1+info.changePct/100);
+    if(prevClose===undefined) prevClose = simPrevClose;
+    const openToday = info.open!==undefined ? info.open : prevClose;
+
+    // Rescale our synthesized 29-session shape so its last point lines up with
+    // the real previous close, keeping the trend line's shape but anchoring the
+    // numbers to something genuine rather than purely simulated.
+    const scale = simPrevClose ? (prevClose/simPrevClose) : 1;
+    STATE.indexDailyScaled = STATE.indexDaily.map(d=>({...d, close: d.close*scale}));
+
+    STATE.indexNow = {
+      openToday, liveValue: info.value, prevClose,
+      dayHigh: info.high, dayLow: info.low, isLive:true
+    };
+  } else {
+    STATE.indexDailyScaled = STATE.indexDaily;
+    const now = computeIndexToday(simPrevClose);
+    now.prevClose = simPrevClose;
+    now.isLive = false;
+    STATE.indexNow = now;
+  }
+}
+function getIndexRangeData(range){
+  const daily = STATE.indexDailyScaled || STATE.indexDaily; const now = STATE.indexNow;
+  if(range==='1D'){
+    const intraday = buildIndexIntraday();
+    let values = intraday.length ? intraday.map(m=>m*now.openToday) : [now.prevClose, now.liveValue];
+    if(values.length) values[values.length-1] = now.liveValue;
+    return {values, labels:{first:'11:00 AM', last:'Now'}};
+  }
+  if(range==='1W'){
+    const chunk = daily.slice(-6);
+    const values = chunk.map(d=>d.close).concat([now.liveValue]);
+    return {values, labels:{first: chunk.length?weekdayShort(chunk[0].ts):'', last:'Today'}};
+  }
+  const values = daily.map(d=>d.close).concat([now.liveValue]);
+  return {values, labels:{first: daily.length?dateShort(daily[0].ts):'', last:'Today'}};
+}
+function renderMarketSession(){
+  const st = marketSessionStatus();
+  const el = document.getElementById('marketSession');
+  const txt = document.getElementById('marketSessionText');
+  if(!el) return;
+  el.className = 'market-session '+(st.isOpen?'open':'closed');
+  txt.textContent = st.isOpen ? 'Market open · closes 3:00 PM NPT' : 'Market closed · opens 11:00 AM NPT, Sun–Thu';
+}
+function renderIndexCard(){
+  if(!STATE.indexNow) updateIndexState();
+  const now = STATE.indexNow;
+  const changeAbs = now.liveValue - now.prevClose;
+  const changePct = (changeAbs/now.prevClose)*100;
+  const up = changePct>=0;
+
+  document.getElementById('idxValue').textContent = now.liveValue.toFixed(2);
+  const pctEl = document.getElementById('idxChangePct');
+  pctEl.className = 'pct '+(up?'up':'down');
+  pctEl.textContent = fmtPct(changePct);
+  const absEl = document.getElementById('idxChangeAbs');
+  absEl.className = 'index-abs '+(up?'num up':'num down');
+  absEl.textContent = (changeAbs>=0?'+':'')+changeAbs.toFixed(2)+' pts';
+
+  let dayHigh = now.dayHigh, dayLow = now.dayLow;
+  if(dayHigh===undefined || dayLow===undefined){
+    const intraday = buildIndexIntraday();
+    const intradayLevels = intraday.map(m=>m*now.openToday);
+    if(intradayLevels.length) intradayLevels[intradayLevels.length-1] = now.liveValue;
+    dayHigh = intradayLevels.length ? Math.max.apply(null, intradayLevels) : now.liveValue;
+    dayLow = intradayLevels.length ? Math.min.apply(null, intradayLevels) : now.liveValue;
+  }
+  const daily = STATE.indexDailyScaled || STATE.indexDaily;
+  const monthCloses = daily.map(d=>d.close).concat([now.liveValue]);
+  const monthHigh = Math.max.apply(null, monthCloses);
+  const monthLow = Math.min.apply(null, monthCloses);
+
+  document.getElementById('idxSubstats').innerHTML = `
+    <div><span>Open</span><b>${now.openToday.toFixed(2)}</b></div>
+    <div><span>Day range</span><b>${dayLow.toFixed(2)} – ${dayHigh.toFixed(2)}</b></div>
+    <div><span>Prev close</span><b>${now.prevClose.toFixed(2)}</b></div>
+    <div><span>30D range</span><b>${monthLow.toFixed(2)} – ${monthHigh.toFixed(2)}</b></div>
+  `;
+  const tagEl = document.getElementById('idxMethodTag');
+  if(tagEl){
+    if(now.isLive){ tagEl.textContent = 'LIVE'; tagEl.title = "This value is pulled from NEPSE's own published index via an unofficial community feed, when that feed is reachable. The 1W/1M trend line's historical shape is still simulated and rescaled to end at this real number."; }
+    else { tagEl.textContent = 'SIMULATED'; tagEl.title = "The live index feed is unavailable right now, so this is an illustrative composite computed from this watchlist's "+STOCKS.length+" curated constituents, weighted by approximate float-adjusted market capitalization. Not NEPSE's official index value."; }
+  }
+  renderMarketSession();
+  renderIndexChart();
+  document.getElementById('idxFoot').textContent = 'As of '+new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})+' · '+
+    (now.isLive ? "sourced from NEPSE's official index via an unofficial community feed" : 'simulated composite across '+STOCKS.length+' watchlist constituents (live feed unavailable)')+'.';
+}
+function renderIndexChart(){
+  const {values, labels} = getIndexRangeData(STATE.indexRange);
+  document.getElementById('indexChart').innerHTML = indexLineSVG(values, {height:200, startLabel:labels.first, endLabel:labels.last});
+}
+
+/* ===================== RENDER: TICKER ===================== */
+function renderTicker(){
+  let idxHtml = '';
+  if(STATE.indexNow){
+    const chg = STATE.indexNow.liveValue - STATE.indexNow.prevClose;
+    const pct = (chg/STATE.indexNow.prevClose)*100;
+    const up = pct>=0;
+    idxHtml = `<span class="tick-item tick-index"><b>NEPSE</b> ${STATE.indexNow.liveValue.toFixed(2)} <span class="${up?'up':'down'}">${fmtPct(pct)}</span></span>`;
+  }
+  const items = STOCKS.map(s=>{
+    const q = STATE.market[s.sym]; if(!q) return '';
+    const up = q.changePct>=0;
+    return `<span class="tick-item"><b>${s.sym}</b> ${fmtNPR(q.price,1)} <span class="${up?'up':'down'}">${fmtPct(q.changePct)}</span></span>`;
+  }).join('');
+  const full = idxHtml+items;
+  document.getElementById('tickerTrack').innerHTML = full+full; // duplicate for seamless loop
+}
+
+/* ===================== RENDER: MARKETS TAB ===================== */
+function netWorth(){
+  let v = STATE.profile ? STATE.profile.cash : 0;
+  Object.keys(STATE.holdings).forEach(sym=>{
+    const h = STATE.holdings[sym]; const q = STATE.market[sym];
+    if(h && q) v += h.qty * q.price;
+  });
+  return v;
+}
+function fmtBigNPR(num){
+  if(num===undefined || num===null || isNaN(num)) return '—';
+  if(num>=1e9) return 'Rs. '+(num/1e9).toFixed(2)+' Arba';
+  if(num>=1e7) return 'Rs. '+(num/1e7).toFixed(2)+' Crore';
+  if(num>=1e5) return 'Rs. '+(num/1e5).toFixed(2)+' Lakh';
+  return fmtNPR(num);
+}
+function renderMarketStats(){
+  const gainers = STOCKS.filter(s=>STATE.market[s.sym] && STATE.market[s.sym].changePct>0).length;
+  const losers = STOCKS.filter(s=>STATE.market[s.sym] && STATE.market[s.sym].changePct<0).length;
+  const avgIdx = STOCKS.reduce((a,s)=>a+((STATE.market[s.sym]&&STATE.market[s.sym].changePct)||0),0)/STOCKS.length;
+  let extra = '';
+  const sum = STATE.liveSummaryInfo;
+  if(sum){
+    if(sum.turnover!==undefined) extra += `<div class="stat-card"><div class="lbl">Market turnover</div><div class="val">${fmtBigNPR(sum.turnover)}</div></div>`;
+    if(sum.transactions!==undefined) extra += `<div class="stat-card"><div class="lbl">Transactions</div><div class="val">${Math.round(sum.transactions).toLocaleString('en-IN')}</div></div>`;
+    if(sum.scrips!==undefined) extra += `<div class="stat-card"><div class="lbl">Scrips traded</div><div class="val">${Math.round(sum.scrips)}</div></div>`;
+  }
+  document.getElementById('marketStats').innerHTML = `
+    <div class="stat-card"><div class="lbl">Watchlist advancers</div><div class="val num up">${gainers}</div></div>
+    <div class="stat-card"><div class="lbl">Watchlist decliners</div><div class="val num down">${losers}</div></div>
+    <div class="stat-card"><div class="lbl">Avg move</div><div class="val ${avgIdx>=0?'num up':'num down'}">${fmtPct(avgIdx)}</div></div>
+    ${extra}
+  `;
+}
+function renderTopMovers(){
+  const grid = document.getElementById('moversGrid');
+  const tag = document.getElementById('moversSourceTag');
+  if(!grid) return;
+  let gainers = STATE.liveGainers, losers = STATE.liveLosers, live = true;
+  if(!gainers || !losers){
+    live = false;
+    const withQuotes = STOCKS.map(s=>({sym:s.sym, price:(STATE.market[s.sym]||{}).price, changePct:(STATE.market[s.sym]||{}).changePct||0})).filter(x=>x.price!==undefined);
+    const sorted = withQuotes.slice().sort((a,b)=>b.changePct-a.changePct);
+    gainers = sorted.slice(0,5);
+    losers = sorted.slice(-5).reverse();
+  }
+  tag.textContent = live ? 'Market-wide, live feed' : 'From this watchlist (live feed unavailable)';
+  const row = (m)=>{
+    const up = m.changePct>=0;
+    return `<div class="movers-row"><span class="sym">${m.sym}</span><span class="px">${fmtNPR(m.price,1)}</span><span class="pct ${up?'up':'down'}">${fmtPct(m.changePct)}</span></div>`;
+  };
+  grid.innerHTML = `
+    <div class="movers-col"><h4>Top gainers</h4>${gainers.length?gainers.map(row).join(''):'<div class="empty-state">No data.</div>'}</div>
+    <div class="movers-col"><h4>Top losers</h4>${losers.length?losers.map(row).join(''):'<div class="empty-state">No data.</div>'}</div>
+  `;
+}
+function buildMarketUniverse(){
+  const symsSeen = new Set();
+  const universe = [];
+  STOCKS.forEach(s=>{ if(!symsSeen.has(s.sym)){ symsSeen.add(s.sym); universe.push(s); } });
+  if(STATE.dataMode==='live'){
+    Object.keys(STATE.market).forEach(sym=>{
+      if(!symsSeen.has(sym)){ symsSeen.add(sym); universe.push(metaFor(sym)); }
+    });
+  }
+  universe.sort((a,b)=> a.sym.localeCompare(b.sym));
+  return universe;
+}
+function renderMarkets(filter){
+  renderMarketStats();
+  if(!STATE.indexNow) updateIndexState();
+  renderIndexCard();
+  renderTopMovers();
+  const body = document.getElementById('marketsBody');
+  const universe = buildMarketUniverse();
+  const titleEl = document.getElementById('watchlistTitle');
+  if(titleEl){
+    titleEl.textContent = STATE.dataMode==='live'
+      ? `All NEPSE Securities (${universe.length})`
+      : `Watchlist (${universe.length} curated, live feed unavailable)`;
+  }
+  const f = (filter||'').toLowerCase();
+  const rows = universe.filter(s=> !f || s.sym.toLowerCase().includes(f) || s.sector.toLowerCase().includes(f) || s.name.toLowerCase().includes(f));
+  if(!rows.length){ body.innerHTML = `<tr><td colspan="5" class="empty-state">No securities match "${filter}".</td></tr>`; return; }
+  body.innerHTML = rows.map(s=>{
+    const q = STATE.market[s.sym] || {price:s.base||0, changePct:0};
+    const up = q.changePct>=0;
+    const held = STATE.holdings[s.sym];
+    return `<tr class="row-hover" data-sym="${s.sym}">
+      <td><span class="sym">${s.sym}</span><br><span class="sec-tag">${s.name}</span></td>
+      <td class="sec-tag">${s.sector}</td>
+      <td class="px">${fmtNPR(q.price,1)}</td>
+      <td><span class="pct ${up?'up':'down'}">${fmtPct(q.changePct)}</span></td>
+      <td class="px">${held? held.qty+' sh' : '—'}</td>
+    </tr>`;
+  }).join('');
+  body.querySelectorAll('tr').forEach(tr=>{
+    tr.addEventListener('click', ()=> openStockModal(tr.getAttribute('data-sym')));
+  });
+}
+
+/* ===================== RENDER: PORTFOLIO TAB ===================== */
+function renderPortfolioStats(){
+  const nw = netWorth();
+  const gain = nw - 100000;
+  const gainPct = (gain/100000)*100;
+  document.getElementById('portfolioStats').innerHTML = `
+    <div class="stat-card"><div class="lbl">Cash</div><div class="val">${fmtNPR(STATE.profile.cash)}</div></div>
+    <div class="stat-card"><div class="lbl">Net worth</div><div class="val">${fmtNPR(nw)}</div></div>
+    <div class="stat-card"><div class="lbl">All-time P&amp;L</div><div class="val ${gain>=0?'num up':'num down'}">${fmtNPR(gain)} (${fmtPct(gainPct)})</div></div>
+  `;
+}
+function renderHoldings(){
+  const body = document.getElementById('holdingsBody');
+  const syms = Object.keys(STATE.holdings).filter(s=>STATE.holdings[s].qty>0);
+  if(!syms.length){ body.innerHTML = `<tr><td colspan="6" class="empty-state">No holdings yet — visit Markets to make your first trade.</td></tr>`; return; }
+  body.innerHTML = syms.map(sym=>{
+    const h = STATE.holdings[sym]; const q = STATE.market[sym]; const meta = metaFor(sym);
+    const price = q ? q.price : h.avgCost;
+    const value = h.qty*price;
+    const pl = value - (h.qty*h.avgCost);
+    const plPct = h.avgCost ? (pl/(h.qty*h.avgCost))*100 : 0;
+    return `<tr><td><span class="sym">${sym}</span><br><span class="sec-tag">${meta.name}</span></td>
+      <td class="px">${h.qty}</td><td class="px">${fmtNPR(h.avgCost,1)}</td><td class="px">${fmtNPR(price,1)}</td>
+      <td class="px">${fmtNPR(value)}</td><td class="px ${pl>=0?'num up':'num down'}">${fmtNPR(pl)} (${fmtPct(plPct)})</td></tr>`;
+  }).join('');
+}
+function renderTx(){
+  const body = document.getElementById('txBody');
+  if(!STATE.transactions.length){ body.innerHTML = `<tr><td colspan="6" class="empty-state">No transactions yet.</td></tr>`; return; }
+  body.innerHTML = STATE.transactions.slice().reverse().slice(0,50).map(t=>`
+    <tr><td class="sec-tag">${timeAgo(t.ts)}</td>
+    <td class="${t.action==='BUY'?'num up':'num down'}">${t.action}</td>
+    <td class="sym">${t.sym}</td><td class="px">${t.qty}</td><td class="px">${fmtNPR(t.price,1)}</td><td class="px">${fmtNPR(t.total)}</td></tr>
+  `).join('');
+}
+function renderNetWorthChart(){
+  const vals = STATE.netWorthHistory.length>1 ? STATE.netWorthHistory.map(p=>p.v) : [100000, netWorth()];
+  document.getElementById('netWorthChart').innerHTML = ridgeSVG(vals, {height:160});
+}
+function renderPortfolio(){
+  renderPortfolioStats(); renderHoldings(); renderTx(); renderNetWorthChart();
+  document.getElementById('chipCash').textContent = fmtNPR(STATE.profile.cash);
+  document.getElementById('chipNet').textContent = fmtNPR(netWorth());
+}
+
+/* ===================== TRADING ===================== */
+async function recordNetWorthSnapshot(){
+  const nw = netWorth();
+  STATE.netWorthHistory.push({ts:Date.now(), v:nw});
+  if(STATE.netWorthHistory.length>200) STATE.netWorthHistory = STATE.netWorthHistory.slice(-200);
+  await Store.set('netWorthHistory', STATE.netWorthHistory, false);
+  await pushLeaderboardEntry();
+}
+async function pushLeaderboardEntry(){
+  if(!STATE.profile) return;
+  const nw = netWorth();
+  await Store.set('leaderboard:'+STATE.profile.userId, {
+    username: STATE.profile.username, netWorth: nw,
+    gainPct: ((nw-100000)/100000)*100,
+    literacyScore: (STATE.quizProgress?STATE.quizProgress.score:0) + (STATE.scenarioProgress?STATE.scenarioProgress.score:0),
+    updatedAt: Date.now()
+  }, true);
+}
+async function executeTrade(){
+  const sym = STATE.activeStockSym; const q = STATE.market[sym];
+  if(!q) return;
+  const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value)||1);
+  const errEl = document.getElementById('tradeError'); errEl.style.display='none';
+  if(STATE.modalMode==='buy'){
+    const cost = qty*q.price;
+    if(cost > STATE.profile.cash){ errEl.textContent = "Not enough virtual cash for this order."; errEl.style.display='block'; return; }
+    const h = STATE.holdings[sym] || {qty:0, avgCost:0};
+    const newQty = h.qty+qty;
+    h.avgCost = ((h.avgCost*h.qty)+cost)/newQty;
+    h.qty = newQty;
+    STATE.holdings[sym]=h;
+    STATE.profile.cash -= cost;
+    STATE.transactions.push({ts:Date.now(), action:'BUY', sym, qty, price:q.price, total:cost});
+    toast(`Bought ${qty} ${sym} @ ${fmtNPR(q.price,1)}`, 'ok');
+  } else {
+    const h = STATE.holdings[sym];
+    if(!h || h.qty<qty){ errEl.textContent = "You don't own that many shares."; errEl.style.display='block'; return; }
+    const proceeds = qty*q.price;
+    h.qty -= qty;
+    STATE.profile.cash += proceeds;
+    STATE.transactions.push({ts:Date.now(), action:'SELL', sym, qty, price:q.price, total:proceeds});
+    toast(`Sold ${qty} ${sym} @ ${fmtNPR(q.price,1)}`, 'ok');
+  }
+  await Store.set('profile', STATE.profile, false);
+  await Store.set('holdings', STATE.holdings, false);
+  await Store.set('transactions', STATE.transactions, false);
+  await recordNetWorthSnapshot();
+  renderStockModalQuote();
+  renderPortfolio();
+  renderMarkets(document.getElementById('stockSearch').value);
+}
+
+/* ===================== STOCK MODAL ===================== */
+function openStockModal(sym){
+  STATE.activeStockSym = sym; STATE.modalMode='buy';
+  document.getElementById('modeBuy').classList.add('active');
+  document.getElementById('modeSell').classList.remove('active');
+  document.getElementById('qtyInput').value = 1;
+  document.getElementById('stockModalOverlay').classList.remove('hidden');
+  renderStockModalQuote();
+  renderModalThread();
+}
+function renderStockModalQuote(){
+  const sym = STATE.activeStockSym; if(!sym) return;
+  const meta = metaFor(sym); const q = STATE.market[sym];
+  document.getElementById('modalSector').textContent = meta.sector;
+  document.getElementById('modalName').textContent = meta.name+' ('+sym+')';
+  document.getElementById('modalPrice').textContent = fmtNPR(q.price,1);
+  const up = q.changePct>=0;
+  const ch = document.getElementById('modalChange');
+  ch.className = 'pct '+(up?'up':'down'); ch.textContent = fmtPct(q.changePct);
+  document.getElementById('modalChart').innerHTML = ridgeSVG(q.hist||[q.price,q.price], {height:130});
+  updateTradeSummary();
+  const held = STATE.holdings[sym];
+  document.getElementById('modeSell').disabled = !(held && held.qty>0);
+}
+function updateTradeSummary(){
+  const sym = STATE.activeStockSym; const q = STATE.market[sym]; if(!q) return;
+  const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value)||1);
+  const total = qty*q.price;
+  document.getElementById('sumPrice').textContent = fmtNPR(q.price,1);
+  document.getElementById('sumQty').textContent = qty;
+  document.getElementById('sumTotal').textContent = fmtNPR(total);
+  if(STATE.modalMode==='buy'){
+    document.getElementById('sumTotalLabel').textContent='Estimated cost';
+    document.getElementById('sumAfterLabel').textContent='Cash after';
+    document.getElementById('sumAfter').textContent = fmtNPR(STATE.profile.cash-total);
+    document.getElementById('tradeBtn').className='btn buy full'; document.getElementById('tradeBtn').textContent='Buy '+sym;
+  } else {
+    document.getElementById('sumTotalLabel').textContent='Estimated proceeds';
+    document.getElementById('sumAfterLabel').textContent='Cash after';
+    document.getElementById('sumAfter').textContent = fmtNPR(STATE.profile.cash+total);
+    document.getElementById('tradeBtn').className='btn sell full'; document.getElementById('tradeBtn').textContent='Sell '+sym;
+  }
+  document.getElementById('tradeError').style.display='none';
+}
+
+/* ===================== DISCUSSION ===================== */
+async function loadAllPosts(){
+  const keys = await Store.list('discuss:', true);
+  const limited = keys.slice(-200);
+  const posts = [];
+  for(const k of limited){
+    const v = await Store.get(k, true);
+    if(v) posts.push(v);
+  }
+  posts.sort((a,b)=>b.ts-a.ts);
+  return posts;
+}
+function localModeNoticeHTML(){
+  if(Store.mode==='supabase') return `<div class="local-mode-note connected">Connected to a shared backend — this list is live across everyone visiting this site.</div>`;
+  if(Store.mode==='local') return `<div class="local-mode-note">Running in local mode — this list only reflects activity saved in your own browser, since there's no shared backend connected. Wire up a free backend (see the deployment guide) to make it live across visitors.</div>`;
+  return '';
+}
+async function renderFeed(){
+  const el = document.getElementById('feedList');
+  el.innerHTML = `<div class="empty-state">Loading feed…</div>`;
+  const posts = await loadAllPosts();
+  const notice = localModeNoticeHTML();
+  if(!posts.length){ el.innerHTML = notice+`<div class="empty-state">No posts yet. Be the first to say something.</div>`; return; }
+  el.innerHTML = notice+posts.slice(0,40).map(p=>`
+    <div class="post"><div class="meta"><span class="who">${escapeHtml(p.username)}</span><span class="tag">${p.sym}</span><span>${timeAgo(p.ts)}</span></div>
+    <div class="body">${escapeHtml(p.text)}</div></div>
+  `).join('');
+}
+async function renderModalThread(){
+  const sym = STATE.activeStockSym;
+  const el = document.getElementById('modalThread');
+  el.innerHTML = `<div class="empty-state">Loading…</div>`;
+  const all = await loadAllPosts();
+  const posts = all.filter(p=>p.sym===sym);
+  if(!posts.length){ el.innerHTML = `<div class="empty-state">No comments on ${sym} yet.</div>`; return; }
+  el.innerHTML = posts.slice(0,20).map(p=>`
+    <div class="post"><div class="meta"><span class="who">${escapeHtml(p.username)}</span><span>${timeAgo(p.ts)}</span></div>
+    <div class="body">${escapeHtml(p.text)}</div></div>
+  `).join('');
+}
+async function submitPost(sym, text){
+  text = text.trim();
+  if(!text) return;
+  if(text.length>280){ toast('Keep it under 280 characters.','err'); return; }
+  const key = 'discuss:'+sym+':'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
+  await Store.set(key, {username:STATE.profile.username, sym, text, ts:Date.now()}, true);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ===================== LEADERBOARD ===================== */
+async function renderLeaderboard(){
+  const el = document.getElementById('lbList');
+  el.innerHTML = `<div class="empty-state">Loading leaderboard…</div>`;
+  const keys = await Store.list('leaderboard:', true);
+  const entries = [];
+  for(const k of keys.slice(0,150)){
+    const v = await Store.get(k, true);
+    if(v) entries.push(v);
+  }
+  const notice = localModeNoticeHTML();
+  if(!entries.length){ el.innerHTML = notice+`<div class="empty-state">No entries yet — trade something to appear here.</div>`; return; }
+  const mode = STATE.lbMode;
+  entries.sort((a,b)=> mode==='net' ? b.netWorth-a.netWorth : (b.literacyScore||0)-(a.literacyScore||0));
+  el.innerHTML = notice+entries.slice(0,30).map((e,i)=>{
+    const me = STATE.profile && e.username===STATE.profile.username;
+    const rankClass = i===0?'top1':i===1?'top2':i===2?'top3':'';
+    const val = mode==='net' ? fmtNPR(e.netWorth) : (e.literacyScore||0)+' pts';
+    return `<div class="lb-row ${me?'me':''}">
+      <div class="lb-rank ${rankClass}">${i+1}</div>
+      <div class="lb-name">${escapeHtml(e.username)}${me?'<span class="you">YOU</span>':''}</div>
+      <div class="lb-val">${val}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ===================== QUIZ GAME ===================== */
+const QUIZ_BANK = [
+  {q:"You put all your virtual rupees into one hydropower stock. What's the main risk?", opts:["You'll owe taxes sooner","Lack of diversification — one bad event can hurt your whole portfolio","The stock will get delisted automatically","Nothing, single-stock bets are always safer"], correct:1, ex:"Diversification spreads risk across companies and sectors, so one disappointing earnings call or regulatory change doesn't sink your entire portfolio."},
+  {q:"A stock has a P/E (price-to-earnings) ratio of 40, while its sector average is 15. What does that suggest?", opts:["The stock is definitely undervalued","The market is pricing in much higher future growth — or the stock may be overvalued", "P/E ratio doesn't matter for NEPSE stocks","The company pays no dividend"], correct:1, ex:"A high P/E relative to peers usually means investors expect strong future growth — or that the price has run ahead of fundamentals. Either way, it's worth digging deeper before buying."},
+  {q:"What's the difference between a market order and a limit order?", opts:["No difference, they're the same thing","A market order executes immediately at the best available price; a limit order only executes at your chosen price or better","A limit order is only for selling","A market order guarantees a profit"], correct:1, ex:"Market orders prioritize speed (you get filled now, at whatever price is available). Limit orders prioritize price control (you set the ceiling/floor, but might not get filled)."},
+  {q:"Why does compounding reward starting early, even with small amounts?", opts:["Because brokers charge less for young investors","Because returns earned in early years keep earning their own returns over time","It doesn't — total years invested don't matter","Because share prices only go up over long periods"], correct:1, ex:"Compounding means your gains start generating their own gains. Rs. 10,000 growing for 20 years can outgrow Rs. 20,000 growing for 10 — the extra time matters more than the extra capital."},
+  {q:"NEPSE applies daily circuit limits on individual stocks. What's the purpose of a circuit breaker?", opts:["To guarantee profits for investors","To slow down extreme single-day price swings and reduce panic-driven moves","To stop a company from ever losing value","To set the company's dividend rate"], correct:1, ex:"Circuit limits cap how far a stock can move in a single session, giving the market time to absorb news and reducing the chance of panic-driven spirals."},
+  {q:"In Nepal, settlement of a regular stock trade typically follows a 'T+2' cycle. What does that mean?", opts:["You get a 2% discount on trade day","Shares/funds settle two business days after the trade date","You have 2 days to cancel any trade for free","Dividends are paid 2 days after you buy"], correct:1, ex:"T+2 means the actual transfer of shares and cash completes two business days after the trade — the trade is agreed on day T, but ownership formally settles on T+2."},
+  {q:"A company announces a 15% bonus share issue. What actually happens to your holding?", opts:["You receive 15% more shares, but the share price typically adjusts downward to reflect the larger share count","You receive 15% extra cash instead of shares","Nothing changes for existing shareholders","Your shares are cancelled and reissued at a higher price"], correct:0, ex:"Bonus shares increase your share count proportionally, but since the company's total value hasn't changed, the price per share typically adjusts down — your overall position value is roughly unchanged at issuance."},
+  {q:"What's a 'right share' offering?", opts:["A free gift from the company to new investors","An offer letting existing shareholders buy new shares, usually at a discount, in proportion to what they already hold","A type of dividend paid only to company founders","Shares that can only be sold, never bought"], correct:1, ex:"Rights issues let existing shareholders buy additional shares — often below market price — roughly in proportion to their current holding, usually to help the company raise capital."},
+  {q:"Which best describes 'systematic risk'?", opts:["Risk specific to one company's management decisions","Market-wide risk (like interest rate changes or a recession) that diversification can't fully eliminate","Risk that only affects penny stocks","A risk that disappears once you diversify enough"], correct:1, ex:"Systematic risk affects the whole market — things like interest rate hikes, inflation, or a broad economic slowdown. Diversifying across companies helps with company-specific risk, but not this kind."},
+  {q:"Why do many financial advisors suggest building an emergency fund before investing heavily in stocks?", opts:["Because stocks are illegal without one","So you're not forced to sell investments at a bad time just to cover an unexpected expense","Because emergency funds earn higher returns than stocks","It's a NEPSE-specific legal requirement"], correct:1, ex:"Markets dip without warning. An emergency fund means a sudden expense doesn't force you to sell stocks at a loss just to cover it."},
+  {q:"What does 'rupee-cost averaging' mean?", opts:["Always buying the cheapest stock available","Investing a fixed amount at regular intervals, regardless of price, so you buy more shares when prices are low and fewer when high","Converting your rupees to dollars before investing","A government subsidy for new investors"], correct:1, ex:"By investing a fixed sum on a schedule, you automatically buy more shares when prices dip and fewer when they're expensive — smoothing out your average entry price over time."},
+  {q:"A friend says \"everyone's buying this stock, I have to get in now or I'll miss out.\" What's the risk in that thinking?", opts:["There is no risk, more buyers always means a stock keeps rising","It describes herd behavior / FOMO, which can lead to buying at inflated prices right before a pullback","It's a guaranteed long-term winner","It means the company's fundamentals have improved"], correct:1, ex:"Buying purely because of hype, without your own research, is a classic FOMO trap — by the time \"everyone\" is buying, much of the easy gain may already be priced in."},
+  {q:"What is a 'blue-chip' stock generally known for?", opts:["Being a brand-new, unproven company","Belonging to a large, financially stable, well-established company with a track record","Always paying the highest dividend in the market","Being exempt from market risk"], correct:1, ex:"Blue-chip companies are typically large, established, and financially stable — not risk-free, but generally considered more predictable than smaller, newer firms."},
+  {q:"The NEPSE index rises 1.2% in a session. What does that figure represent?", opts:["The average price of every stock added together","A weighted measure of how the overall listed market moved, not any single stock","The interest rate set by Nepal Rastra Bank","The total number of new IPOs that day"], correct:1, ex:"An index is a weighted basket reflecting overall market movement — useful for gauging sentiment, but it can rise even while individual stocks you own fall, and vice versa."},
+  {q:"Why might an investor deliberately hold stocks from different sectors (banking, hydropower, insurance, telecom)?", opts:["Because mixing sectors is required by law","To reduce the chance that one sector's bad year sinks the whole portfolio","Because every sector always moves in the same direction","It has no effect on risk"], correct:1, ex:"Different sectors react differently to the same event — a rate hike might hurt banks but barely touch telecom. Mixing sectors smooths out the bumps."},
+  {q:"What does a company's 'dividend yield' tell you?", opts:["The total number of shares outstanding","Annual dividend payments as a percentage of the current share price","How much tax you'll owe on the stock","The company's total market capitalization"], correct:1, ex:"Dividend yield = annual dividend ÷ current share price. It's one way to compare income return across stocks, though a very high yield can sometimes be a warning sign rather than a bargain."},
+];
+
+function loadQuizQuestion(){
+  const idx = STATE.quizProgress.idx % QUIZ_BANK.length;
+  const item = QUIZ_BANK[idx];
+  document.getElementById('quizProgress').textContent = 'Question '+(STATE.quizProgress.idx+1);
+  document.getElementById('quizScore').textContent = 'Score '+STATE.quizProgress.score;
+  document.getElementById('quizQ').textContent = item.q;
+  document.getElementById('quizExplain').classList.add('hidden');
+  document.getElementById('quizNextBtn').classList.add('hidden');
+  const optsEl = document.getElementById('quizOpts');
+  optsEl.innerHTML = item.opts.map((o,i)=>`<button class="opt" data-i="${i}">${o}</button>`).join('');
+  optsEl.querySelectorAll('.opt').forEach(btn=>{
+    btn.addEventListener('click', ()=>answerQuiz(parseInt(btn.getAttribute('data-i')), item));
+  });
+}
+async function answerQuiz(i, item){
+  const optsEl = document.getElementById('quizOpts');
+  optsEl.querySelectorAll('.opt').forEach((b,bi)=>{
+    b.disabled = true;
+    if(bi===item.correct) b.classList.add('correct');
+    else if(bi===i) b.classList.add('wrong');
+  });
+  if(i===item.correct){ STATE.quizProgress.score += 10; toast('Correct! +10 literacy points','ok'); }
+  else toast('Not quite — check the explanation.', 'err');
+  document.getElementById('quizExplain').textContent = item.ex;
+  document.getElementById('quizExplain').classList.remove('hidden');
+  document.getElementById('quizNextBtn').classList.remove('hidden');
+  await Store.set('quizProgress', STATE.quizProgress, false);
+  await pushLeaderboardEntry();
+  refreshBadges();
+}
+function advanceQuiz(){
+  STATE.quizProgress.idx += 1;
+  Store.set('quizProgress', STATE.quizProgress, false);
+  loadQuizQuestion();
+}
+
+/* ===================== SCENARIO GAME ===================== */
+const SCENARIOS = [
+  {h:"A commercial bank reports record quarterly profit and announces a 20% bonus share.", call:'bull', ex:"Strong earnings plus a bonus issue usually signals management confidence and tends to attract buying interest — a classically bullish combination."},
+  {h:"A listed company's auditor resigns abruptly, three months before year-end results.", call:'bear', ex:"An abrupt auditor resignation is often treated as a red flag for accounting or governance issues — investors typically react cautiously."},
+  {h:"Nepal Rastra Bank sharply raises the policy interest rate to control inflation.", call:'bear', ex:"Higher rates raise borrowing costs for companies and make fixed-deposit returns more attractive relative to stocks, which often pressures equity prices broadly."},
+  {h:"A hydropower company signs a new, favorably-priced long-term power purchase agreement with NEA.", call:'bull', ex:"A secured long-term revenue contract on good terms reduces uncertainty about future cash flows — generally a positive signal for a hydropower stock."},
+  {h:"Broad, sector-wide sell-off across NEPSE with no company-specific news for the stock you hold.", call:'bear', ex:"This describes systematic/market-wide risk — even fundamentally sound companies can dip when the whole market turns risk-off, regardless of their own news."},
+  {h:"A bank's non-performing loan (bad debt) ratio jumps sharply in its latest filing.", call:'bear', ex:"A rising NPL ratio signals more borrowers defaulting, which can hit future profits and is generally read as a negative signal for a bank stock."},
+  {h:"Government announces a cut to the policy rate specifically to encourage lending and investment.", call:'bull', ex:"Lower rates reduce borrowing costs and can make equities relatively more attractive than fixed deposits — generally supportive for stock prices."},
+  {h:"A company's promoter group sells a large block of shares to the public with no stated reason.", call:'bear', ex:"Large, unexplained promoter selling is often read cautiously by the market, even though there can be legitimate reasons (diversification, liquidity needs) behind it."},
+];
+function loadScenario(){
+  const idx = STATE.scenarioProgress.idx % SCENARIOS.length;
+  const item = SCENARIOS[idx];
+  document.getElementById('scenarioProgress').textContent = 'Scenario '+(STATE.scenarioProgress.idx+1);
+  document.getElementById('scenarioScore').textContent = 'Score '+STATE.scenarioProgress.score;
+  document.getElementById('scenarioHeadline').textContent = item.h;
+  document.getElementById('scenarioExplain').classList.add('hidden');
+  document.getElementById('scenarioNextBtn').classList.add('hidden');
+  document.getElementById('scenarioBtns').classList.remove('hidden');
+}
+async function answerScenario(call){
+  const idx = STATE.scenarioProgress.idx % SCENARIOS.length;
+  const item = SCENARIOS[idx];
+  const correct = call===item.call;
+  if(correct){ STATE.scenarioProgress.score += 10; toast('Good call! +10 literacy points','ok'); }
+  else toast('Other traders read it differently — see why.', 'err');
+  document.getElementById('scenarioExplain').textContent = (correct?'✓ ':'✗ Market consensus: '+(item.call==='bull'?'Bullish. ':'Bearish. '))+item.ex;
+  document.getElementById('scenarioExplain').classList.remove('hidden');
+  document.getElementById('scenarioBtns').classList.add('hidden');
+  document.getElementById('scenarioNextBtn').classList.remove('hidden');
+  await Store.set('scenarioProgress', STATE.scenarioProgress, false);
+  await pushLeaderboardEntry();
+  refreshBadges();
+}
+function advanceScenario(){
+  STATE.scenarioProgress.idx += 1;
+  Store.set('scenarioProgress', STATE.scenarioProgress, false);
+  loadScenario();
+}
+function refreshBadges(){
+  const total = (STATE.quizProgress?STATE.quizProgress.score:0) + (STATE.scenarioProgress?STATE.scenarioProgress.score:0);
+  const tiers = [
+    {name:'First Steps', min:10}, {name:'Bronze Investor', min:50},
+    {name:'Silver Investor', min:120}, {name:'Gold Investor', min:220},
+    {name:'Bazaar Sage', min:350},
+  ];
+  document.getElementById('badgeRow').innerHTML = tiers.map(t=>
+    `<div class="badge ${total>=t.min?'earned':''}">${total>=t.min?'★':'☆'} ${t.name}</div>`
+  ).join('') + `<div class="badge earned" style="border-color:var(--blue);color:#9ccbd8;">Literacy score: ${total}</div>`;
+}
+
+/* ===================== TAB NAV ===================== */
+function setActiveTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.getAttribute('data-tab')===name));
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
+  if(name==='portfolio') renderPortfolio();
+  if(name==='leaderboard') renderLeaderboard();
+  if(name==='community') renderFeed();
+  if(name==='markets') renderMarkets(document.getElementById('stockSearch').value);
+}
+
+/* ===================== INIT ===================== */
+async function loadOrCreateProfile(name){
+  let profile = await Store.get('profile', false);
+  if(!profile){
+    profile = {username:name, cash:100000, userId:uid(), joinedAt:Date.now()};
+    await Store.set('profile', profile, false);
+  }
+  return profile;
+}
+async function boot(){
+  STATE.profile = await Store.get('profile', false);
+  if(!STATE.profile){
+    document.getElementById('onboardingOverlay').classList.remove('hidden');
+    document.getElementById('appRoot').classList.add('hidden');
+    return;
+  }
+  await finishBoot();
+}
+async function finishBoot(){
+  document.getElementById('onboardingOverlay').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+
+  STATE.holdings = (await Store.get('holdings', false)) || {};
+  STATE.transactions = (await Store.get('transactions', false)) || [];
+  STATE.netWorthHistory = (await Store.get('netWorthHistory', false)) || [{ts:Date.now(), v:100000}];
+  STATE.quizProgress = (await Store.get('quizProgress', false)) || {idx:0, score:0};
+  STATE.scenarioProgress = (await Store.get('scenarioProgress', false)) || {idx:0, score:0};
+
+  document.getElementById('postSymbol').innerHTML = STOCKS.map(s=>`<option value="${s.sym}">${s.sym}</option>`).join('');
+
+  await refreshMarket();
+  setInterval(refreshMarket, 45000);
+
+  renderMarkets('');
+  loadQuizQuestion();
+  loadScenario();
+  refreshBadges();
+  await pushLeaderboardEntry();
+}
+
+/* ===================== EVENTS ===================== */
+async function handleOnboardSubmit(){
+  const nameInput = document.getElementById('nameInput');
+  const name = nameInput.value.trim();
+  const err = document.getElementById('nameError');
+  if(!name){ err.style.display='block'; nameInput.focus(); return; }
+  err.style.display='none';
+  STATE.profile = await loadOrCreateProfile(name);
+  await finishBoot();
+}
+document.getElementById('onboardSubmitBtn').addEventListener('click', handleOnboardSubmit);
+document.getElementById('nameInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ e.preventDefault(); handleOnboardSubmit(); }
+});
+
+document.getElementById('tabNav').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-tab]'); if(!btn) return;
+  setActiveTab(btn.getAttribute('data-tab'));
+});
+
+document.getElementById('stockSearch').addEventListener('input', (e)=> renderMarkets(e.target.value));
+
+document.getElementById('idxRangeSeg').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-range]'); if(!btn) return;
+  STATE.indexRange = btn.getAttribute('data-range');
+  document.querySelectorAll('#idxRangeSeg button').forEach(b=>b.classList.toggle('active', b===btn));
+  renderIndexChart();
+});
+setInterval(renderMarketSession, 30000);
+
+document.getElementById('closeModal').addEventListener('click', ()=> document.getElementById('stockModalOverlay').classList.add('hidden'));
+document.getElementById('stockModalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='stockModalOverlay') e.currentTarget.classList.add('hidden'); });
+
+document.getElementById('modeBuy').addEventListener('click', ()=>{ STATE.modalMode='buy'; document.getElementById('modeBuy').classList.add('active'); document.getElementById('modeSell').classList.remove('active'); updateTradeSummary(); });
+document.getElementById('modeSell').addEventListener('click', (e)=>{ if(e.currentTarget.disabled) return; STATE.modalMode='sell'; document.getElementById('modeSell').classList.add('active'); document.getElementById('modeBuy').classList.remove('active'); updateTradeSummary(); });
+
+document.getElementById('qtyMinus').addEventListener('click', ()=>{ const i=document.getElementById('qtyInput'); i.value = Math.max(1,(parseInt(i.value)||1)-1); updateTradeSummary(); });
+document.getElementById('qtyPlus').addEventListener('click', ()=>{ const i=document.getElementById('qtyInput'); i.value = (parseInt(i.value)||1)+1; updateTradeSummary(); });
+document.getElementById('qtyInput').addEventListener('input', updateTradeSummary);
+document.getElementById('tradeBtn').addEventListener('click', executeTrade);
+
+document.getElementById('modalPostBtn').addEventListener('click', async ()=>{
+  const inp = document.getElementById('modalPostText');
+  await submitPost(STATE.activeStockSym, inp.value);
+  inp.value=''; renderModalThread();
+});
+document.getElementById('postBtn').addEventListener('click', async ()=>{
+  const sym = document.getElementById('postSymbol').value;
+  const inp = document.getElementById('postText');
+  await submitPost(sym, inp.value);
+  inp.value=''; renderFeed();
+});
+
+document.getElementById('lbModeNet').addEventListener('click', ()=>{ STATE.lbMode='net'; document.getElementById('lbModeNet').classList.add('active'); document.getElementById('lbModeLit').classList.remove('active'); renderLeaderboard(); });
+document.getElementById('lbModeLit').addEventListener('click', ()=>{ STATE.lbMode='lit'; document.getElementById('lbModeLit').classList.add('active'); document.getElementById('lbModeNet').classList.remove('active'); renderLeaderboard(); });
+document.getElementById('lbRefresh').addEventListener('click', renderLeaderboard);
+
+document.getElementById('scenarioBtns').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-call]'); if(!btn) return;
+  answerScenario(btn.getAttribute('data-call'));
+});
+document.getElementById('quizNextBtn').addEventListener('click', advanceQuiz);
+document.getElementById('scenarioNextBtn').addEventListener('click', advanceScenario);
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(!confirm('Reset your virtual portfolio back to Rs. 1,00,000 cash? This clears holdings and trade history (your username and literacy score stay).')) return;
+  STATE.profile.cash = 100000;
+  STATE.holdings = {};
+  STATE.transactions = [];
+  STATE.netWorthHistory = [{ts:Date.now(), v:100000}];
+  await Store.set('profile', STATE.profile, false);
+  await Store.set('holdings', STATE.holdings, false);
+  await Store.set('transactions', STATE.transactions, false);
+  await Store.set('netWorthHistory', STATE.netWorthHistory, false);
+  await pushLeaderboardEntry();
+  renderPortfolio();
+  toast('Portfolio reset.', 'ok');
+});
+
+boot();
+})();
+</script>
+</body>
+</html>
